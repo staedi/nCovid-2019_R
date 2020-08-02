@@ -12,6 +12,8 @@ read_spdata <- function() {
     countries_sf <<- sf::read_sf("/Users/minpark/Documents/nCovid-2019/geospatial/ne_50m_admin_0_countries.shp")
     states_sf <<- sf::read_sf("/Users/minpark/Documents/nCovid-2019/geospatial/ne_50m_admin_1_states_provinces.shp")
     china_sf <<- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_CHN_1_sf.rds")
+    russia_sf <<- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_RUS_1_sf.rds")
+    # gadm_sf <<- bind_rows(china_sf,russia_sf)
 }
 
 clean_spdata <- function(spframe) {
@@ -21,7 +23,8 @@ clean_spdata <- function(spframe) {
           dplyr::filter(POP_EST != 0 & ADMIN != 'Antarctica') %>%
           dplyr::select(NAME_EN,ADM0_A3,geometry) %>%
           dplyr::rename("Country/Region" = "NAME_EN",
-        "adm0_a3" = "ADM0_A3")
+        "adm0_a3" = "ADM0_A3") %>%
+          dplyr::mutate(adm0_a3 = dplyr::if_else(grepl('SDS',adm0_a3),'SSD',adm0_a3))
     }
 
     else if (grepl('states',name)) {
@@ -39,7 +42,8 @@ clean_spdata <- function(spframe) {
                         "Province/State" = "NAME_1") %>%
           dplyr::mutate(`Province/State` = dplyr::if_else(grepl('Mongol',`Province/State`),'Inner Mongolia',`Province/State`),
                         `Province/State` = dplyr::if_else(grepl('Ningxia',`Province/State`),'Ningxia',`Province/State`),
-                        `Province/State` = dplyr::if_else(grepl('Xinjiang',`Province/State`),'Xinjiang',`Province/State`))
+                        `Province/State` = dplyr::if_else(grepl('Xinjiang',`Province/State`),'Xinjiang',`Province/State`),
+                        `Province/State` = dplyr::if_else(grepl('Xizang',`Province/State`),'Tibet',`Province/State`))
     }
     
     return (spframe)
@@ -309,10 +313,10 @@ plot_heatmap <- function(covid, type) {
     htmap
 }
 
-# merge_data()
-# maps <- plot_leaflet(combined_cov)
-# g_ht <- plot_heatmap(covid,'global')
-# us_ht <- plot_heatmap(covid,'US')
-# can_ht <- plot_heatmap(covid,'CAN')
-# aus_ht <- plot_heatmap(covid,'AUS')
-# china_ht <- plot_heatmap(covid,'china')
+merge_data()
+maps <- plot_leaflet(combined_cov)
+g_ht <- plot_heatmap(covid,'global')
+us_ht <- plot_heatmap(covid,'US')
+can_ht <- plot_heatmap(covid,'CAN')
+aus_ht <- plot_heatmap(covid,'AUS')
+china_ht <- plot_heatmap(covid,'china')

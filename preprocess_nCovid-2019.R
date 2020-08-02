@@ -9,6 +9,9 @@ get_filename <- function(git_path, file_list, remote) {
     if (remote == "Y") {
       file_list[names(file_list[iter])] <- paste0(git_path,file_list[[iter]])
     }
+    else {
+      file_list[names(file_list[iter])] <- paste0('data/',file_list[[iter]])
+    }
   }
   return (file_list)
 }
@@ -92,67 +95,6 @@ clean_data <- function() {
     dplyr::filter(Lat != 0 | Long != 0) %>%
     subset(select=-c(FIPS))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
-    
-  # # Merge geographic info
-  # # type_u = grepl('^u',deparse(substitute(data)))
-  # data <- dplyr::inner_join(data, geo, by=c('Country/Region','Province/State'))
-
-  # uc %>%
-  # group_by(`Country/Region`,`Province/State`) %>%
-  # dplyr::summarize_at(vars(ends_with("20")),list(~sum(.)))
-  
-# counties_cov <- inner_join(counties_sf, group_by(Covid, countyFIPS) %>%
-#                              summarise(cases=sum(cases)), by=c("county_fips"="countyFIPS"))
-
-
-  # if (type_u) {
-  #   data <- dplyr::inner_join(data, geo, by=c('Country/Region','Province/State'))
-  #   # dplyr::inner_join(ud, geo, by=c('Country/Region','Province/State','FIPS'))
-  # }
-  # else {
-  #   data <- dplyr::inner_join(data, geo, by=c('Country/Region','Province/State'))
-  #   # dplyr::inner_join(wd, geo, by=c('Country/Region','Province/State'))
-  # }
-  
-  # # Cleaning data
-  # data <- data %>%
-  #   dplyr::filter(Lat != 0 | Long != 0) %>%
-  #   subset(select=-c(FIPS))
-  
-  # # if (type_u) {
-  # #   data <- data %>%
-  # #     subset(select=-c(UID,iso2,code3,Lat,Long,Admin2,Combined_Key))
-  # # }
-
-  # # else {
-  # #   data <- data %>%
-  # #     subset(select=-c(Lat,Long))
-  # # }
-
-  # return (data)
-
-  # # Cleaning data (Global)
-  # wc <<- wc %>%
-  #   dplyr::filter(Lat != 0 | Long != 0)
-  # wd <<- wd %>%
-  #   dplyr::filter(Lat != 0 | Long != 0)
-  
-  # # confirmed_global %>%
-  # #   subset(select=-c(FIPS))
-  # # deaths_global %>%
-  # #   subset(select=-c(FIPS))
-  
-  # # Cleaning data (US)
-  # uc <- uc %>%
-  #   dplyr::filter(Lat != 0 | Long != 0)
-  # ud <- ud %>%
-  #   dplyr::filter(Lat != 0 | Long != 0)
-  
-  # uc <<- uc %>%
-  #   subset(select=-c(UID,iso2,iso3,code3,FIPS,Admin2,Combined_Key))
-  # ud <<- ud %>%
-  #   subset(select=-c(UID,iso2,iso3,code3,FIPS,Admin2,Combined_Key))
-  # list(confirmed_global,deaths_global,confirmed_us,deaths_us) 
 }
 
 group_data <- function(dataframe) {
@@ -175,30 +117,7 @@ group_data <- function(dataframe) {
       dplyr::mutate('Total Deaths' = sum(Deaths)) %>%
       dplyr::ungroup()
   }
-  # if (dataname == 'wc') {
-  #   dataframe <- dataframe %>%
-  #     tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3,-FIPS) %>%
-  #     dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
-  #     dplyr::summarize('Total Confirmed' = sum(Confirmed))
-  # }
-  # else if (dataname == 'wd') {
-  #   dataframe <- dataframe %>%
-  #     tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3,-FIPS) %>%
-  #     dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
-  #     dplyr::summarize('Total Deaths' = sum(Deaths))
-  # }
-  # else if (dataname == 'uc') {
-  #   dataframe <- dataframe %>%
-  #     tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3,-FIPS) %>%
-  #     dplyr::group_by(`Country/Region`,`Province/State`,Date,adm0_a3) %>%
-  #     dplyr::summarize('Total Confirmed' = sum(Confirmed))
-  # }
-  # else if (dataname == 'ud') {
-  #   dataframe <- dataframe %>%
-  #     tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3,-FIPS) %>%
-  #     dplyr::group_by(`Country/Region`,`Province/State`,Date,adm0_a3) %>%
-  #     dplyr::summarize('Total Deaths' = sum(Deaths))
-  # }
+
   return (dataframe)
 }
 
