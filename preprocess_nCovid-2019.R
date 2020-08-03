@@ -102,7 +102,8 @@ group_data <- function(dataframe) {
   if (dataname == 'confirmed') {
     dataframe <- dataframe %>%
       tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
-      dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y")) %>%
+      dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
+      Confirmed = dplyr::if_else(is.na(Confirmed),0,Confirmed)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
       dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
       dplyr::mutate('Total Confirmed' = sum(Confirmed)) %>%
@@ -111,7 +112,8 @@ group_data <- function(dataframe) {
   else if (dataname == 'deaths') {
     dataframe <- dataframe %>%
       tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
-      dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y")) %>%
+      dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
+      Deaths = dplyr::if_else(is.na(Deaths),0,Deaths)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
       dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
       dplyr::mutate('Total Deaths' = sum(Deaths)) %>%
@@ -137,12 +139,45 @@ merge_dataset <- function(wc, wd, uc, ud) {
     "Total Deaths" = "c(deaths$`Total Deaths`)") %>%
     dplyr::ungroup()
 
-  covid['merge_type'] = 'Country'
+  # Clean Province/State Names
+  covid_groupset <- covid %>%
+    dplyr::filter(adm0_a3 %in% c('ITA','ESP')) %>%
+    dplyr::group_by(adm0_a3,Date,`Country/Region`) %>%
+    # 1) Italy / Spain
+    dplyr::mutate(
+      `Province/State` = if_else(grepl('P.A. ',`Province/State`),'Trentino-Alto Adige',`Province/State`),
+      `Province/State` = if_else((`Province/State` == 'Ceuta' | `Province/State` == 'Melilla'),'Ceuta y Melilla',`Province/State`)) %>%
+    # Lat / Long
+    dplyr::group_by(adm0_a3,Date,`Country/Region`,`Province/State`,`Total Confirmed`,`Total Deaths`) %>%
+    dplyr::summarize(Confirmed = sum(Confirmed),
+      Deaths = sum(Deaths),
+      Lat = mean(Lat), 
+      Long = mean(Long)) %>%
+    # unique() %>%
+    dplyr::ungroup()
+
   covid <- covid %>%
-    dplyr::mutate(merge_type = dplyr::if_else((adm0_a3=='CAN' | adm0_a3=='USA' | adm0_a3=='AUS') & !is.na(`Province/State`),'State',merge_type))
+    dplyr::filter(!adm0_a3 %in% c('ITA','ESP'))
+
+  covid <- bind_rows(covid,covid_groupset)
+    # 3) Russia / Ukraine
+  covid <- covid %>%
+    dplyr::mutate(`Province/State` = if_else(grepl('Jewish',`Province/State`),'Yevrey',`Province/State`),
+      `Province/State` = if_else(`Province/State`=='Moscow','Moscow City',`Province/State`),
+      `Province/State` = if_else(`Province/State`=='Moscow Oblast','Moskva',`Province/State`),
+      `Province/State` = if_else(`Province/State`=='Kiev','Kiev City',`Province/State`),
+      `Province/State` = stringr::str_replace(`Province/State`,' Oblast',''),
+      `Province/State` = stringr::str_replace(`Province/State`,' Republic',''),
+      `Province/State` = stringr::str_replace(`Province/State`,' Autonomous Okrug',''),
+      `Province/State` = gsub('\\*','',`Province/State`),
+      `Country/Region` = gsub('\\*','',`Country/Region`))
+
+  # covid['merge_type'] = 'Country'
+  # covid <- covid %>%
+  #   dplyr::mutate(merge_type = dplyr::if_else((adm0_a3=='CAN' | adm0_a3=='USA' | adm0_a3=='AUS' | adm0_a3=='BRA') & !is.na(`Province/State`),'State',merge_type))
  
-  covid <- covid %>%
-    dplyr::mutate(merge_type = dplyr::if_else(adm0_a3=='CHN','China',merge_type))
+  # covid <- covid %>%
+  #   dplyr::mutate(merge_type = dplyr::if_else(adm0_a3=='CHN','China',merge_type))
  
   return (covid)
 
