@@ -8,7 +8,7 @@ Probably extended with Animation (`plotlyr`)
 Primary objectives
 * Overlay Infections and Deaths for **State / Country** on a map (`Leaflet`)
 * Develop a heatmap of the daily increases of infections and deaths of top-N countries/states (`geom_tile`)
-* Generate summary file from Johns Hopkins University Github to facilitate state-level data for more countries
+* Generate summary file using raw time-series from [Johns Hopkins University Github](https://github.com/CSSEGISandData/COVID-19) to facilitate state-level data for more countries
 * Employ Facet/arrangeGrob for to combine infections/deaths in one graphics (`arrangeGrob` chosen)
 
 Future Developments (*animations*)
