@@ -225,21 +225,6 @@ merge_data <- function(remote='N',cutoff=60) {
     combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
 }
 
-# plot_choropleth <- function() {
-#     combined_cov %>%
-#     dplyr::filter(Date == max(Date,na.rm=TRUE)) %>%
-#     ggplot2::ggplot() +
-#     ggplot2::geom_sf(mapping = aes(fill = `Confirmed`), color = NA) +
-#     ggplot2::geom_sf(data = countries_sf, fill = NA, color = "gray", size = 0.25) +
-
-#     # ggplot2::geom_sf(data = states, fill = NA, color = "black", size = 0.25) +
-#     ggplot2::coord_sf(datum = NA) +
-#     ggplot2::scale_fill_gradient(trans = "log", low='yellow', high='red',
-#                       na.value="white", breaks=c(1, max(combined_cov$`Confirmed`))) +
-#     ggplot2::theme_bw() + ggplot2::theme(legend.position="bottom", panel.border = element_blank())
-
-# }
-
 plot_leaflet <- function(data) {
   data <- data %>%
     dplyr::filter(Date == max(Date,na.rm=TRUE))
@@ -382,7 +367,7 @@ plot_heatmap <- function(covid, type) {
         }
         
         g <<- do.call(gridExtra::arrangeGrob,htmap)
-        ggplot2::ggsave(g,filename=paste0("saved/heatmap_",type,"_",max(covid$Date,na.rm=TRUE),".png"))
+        ggplot2::ggsave(g,filename=paste0("saved/heatmap_",type,"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
         
     }
 
@@ -459,7 +444,7 @@ plot_heatmap <- function(covid, type) {
                 print_type <- unique(covid[covid$adm0_a3==cty,'Country/Region'])
             }
             print(paste("Saving heatmap:",print_type))
-            ggplot2::ggsave(g,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==cty,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"))
+            ggplot2::ggsave(g,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==cty,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
         }
     }
 
