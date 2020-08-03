@@ -11,13 +11,13 @@ Primary objectives
 * Generate summary file using raw time-series from [Johns Hopkins University Github](https://github.com/CSSEGISandData/COVID-19) to facilitate state-level data for more countries
 * Employ Facet/arrangeGrob for to combine infections/deaths in one graphics (`arrangeGrob` chosen)
 
-Future Developments (*animations*)
+Future Developments
 * Different statistical methods (e.g., moving average)
 * Employ more relevant data
-  * [Apple mobility data](http://apple.com/covid19/mobility)
-  * [Google mobility data](https://www.google.com/covid19/mobility/)
-  * [Bureau of Statistics](https://www.bls.gov/covid19/home.htm)
-  * [Federal Reserve of St. Louis](https://research.stlouisfed.org/resources/covid-19/)
+  * [Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving
+  * [Google mobility data](https://www.google.com/covid19/mobility/): Transporation and general trends
+  * [Bureau of Labor Statistics](https://www.bls.gov/covid19/home.htm): Consumer Pricing and Job market statistics
+  * [Federal Reserve of St. Louis](https://research.stlouisfed.org/resources/covid-19/): Overall economics statistics
 * Employ animations for mapping (`shiny` with `Leaflet`)
 * Animate heatmap (`plotlyr`)
 * Host on web (`dash`)
