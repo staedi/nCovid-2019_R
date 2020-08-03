@@ -367,6 +367,7 @@ plot_heatmap <- function(covid, type) {
         }
         
         g <<- do.call(gridExtra::arrangeGrob,htmap)
+        print(paste("Saving heatmap:",type))
         ggplot2::ggsave(g,filename=paste0("saved/heatmap_",type,"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
         
     }
@@ -437,13 +438,8 @@ plot_heatmap <- function(covid, type) {
             # ggplot2::ggsave(htmap,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==iter,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
             }
             g <<- do.call(gridExtra::arrangeGrob,htmap)
-            if (type == 'global') {
-                print_type <- type
-            }
-            else {
-                print_type <- unique(covid[covid$adm0_a3==cty,'Country/Region'])
-            }
-            print(paste("Saving heatmap:",print_type))
+            
+            print(paste("Saving heatmap:",unique(covid[covid$adm0_a3==cty,'Country/Region'])))
             ggplot2::ggsave(g,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==cty,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
         }
     }
