@@ -69,13 +69,13 @@ clean_data <- function() {
 
   wc <<- wc %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
-    dplyr::filter((Lat != 0 | Long != 0) & adm0_a3 != 'USA') %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
     subset(select=-c(FIPS))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
   wd <<- wd %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
-    dplyr::filter((Lat != 0 | Long != 0) & adm0_a3 != 'USA') %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
     subset(select=-c(FIPS))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
@@ -97,7 +97,7 @@ clean_data <- function() {
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 }
 
-group_data <- function(dataframe) {
+group_data <- function(dataframe,cutoff=60) {
   dataname = deparse(substitute(dataframe))
   if (dataname == 'confirmed') {
     dataframe <- dataframe %>%
@@ -105,9 +105,21 @@ group_data <- function(dataframe) {
       dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
       Confirmed = dplyr::if_else(is.na(Confirmed),0,Confirmed)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
+      # Calculate differences between rows 
+      dplyr::group_by(adm0_a3,`Province/State`) %>%
+      dplyr::mutate(i_Confirmed = Confirmed - dplyr::lag(Confirmed)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(i_Confirmed = dplyr::if_else(is.na(i_Confirmed),Confirmed,i_Confirmed)) %>%
       dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
       dplyr::mutate('Total Confirmed' = sum(Confirmed)) %>%
-      dplyr::ungroup()
+      dplyr::ungroup() %>%
+      # Calculate differences between rows 
+      dplyr::group_by(adm0_a3,`Province/State`) %>%
+      dplyr::mutate(iTot_Confirmed = `Total Confirmed` - dplyr::lag(`Total Confirmed`)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(iTot_Confirmed = dplyr::if_else(is.na(iTot_Confirmed),`Total Confirmed`,iTot_Confirmed)) %>%
+      dplyr::filter(Date>max(Date,na.rm=TRUE)-lubridate::days(cutoff))
+
   }
   else if (dataname == 'deaths') {
     dataframe <- dataframe %>%
@@ -115,29 +127,43 @@ group_data <- function(dataframe) {
       dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
       Deaths = dplyr::if_else(is.na(Deaths),0,Deaths)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
+      # Calculate differences between rows 
+      dplyr::group_by(adm0_a3,`Province/State`) %>%
+      dplyr::mutate(i_Deaths = Deaths - dplyr::lag(Deaths)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(i_Deaths = dplyr::if_else(is.na(i_Deaths),Deaths,i_Deaths)) %>%
       dplyr::group_by(`Country/Region`,Date,adm0_a3) %>%
       dplyr::mutate('Total Deaths' = sum(Deaths)) %>%
-      dplyr::ungroup()
+      dplyr::ungroup() %>%
+      # Calculate differences between rows 
+      dplyr::group_by(adm0_a3,`Province/State`) %>%
+      dplyr::mutate(iTot_Deaths = `Total Deaths` - dplyr::lag(`Total Deaths`)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(iTot_Deaths = dplyr::if_else(is.na(iTot_Deaths),`Total Deaths`,iTot_Deaths)) %>%
+      dplyr::filter(Date>max(Date,na.rm=TRUE)-lubridate::days(cutoff))
   }
 
   return (dataframe)
 }
 
-merge_dataset <- function(wc, wd, uc, ud) {
+merge_dataset <- function(wc, wd, uc, ud, cutoff) {
   # Concontenate Data by type
   confirmed <- bind_rows(wc,uc)
   deaths <- bind_rows(wd,ud)
 
   # Transform wide-form data to long-form
-  confirmed <- group_data(confirmed)
-  deaths <- group_data(deaths)
+  confirmed <- group_data(confirmed,cutoff)
+  deaths <- group_data(deaths,cutoff)
 
   covid <- cbind(confirmed,c(deaths$Deaths)) %>%
     cbind(c(deaths$`Total Deaths`)) %>%
+    cbind(c(deaths$i_Deaths)) %>%
+    cbind(c(deaths$iTot_Deaths)) %>%
     tibble::as_tibble() %>%
     dplyr::rename("Deaths" = "c(deaths$Deaths)",
-    "Total Deaths" = "c(deaths$`Total Deaths`)") %>%
-    dplyr::ungroup()
+    "Total Deaths" = "c(deaths$`Total Deaths`)",
+    "i_Deaths" = "c(deaths$i_Deaths)",
+    "iTot_Deaths" = "c(deaths$iTot_Deaths)")
 
   # Clean Province/State Names
   covid_groupset <- covid %>%
@@ -148,9 +174,11 @@ merge_dataset <- function(wc, wd, uc, ud) {
       `Province/State` = if_else(grepl('P.A. ',`Province/State`),'Trentino-Alto Adige',`Province/State`),
       `Province/State` = if_else((`Province/State` == 'Ceuta' | `Province/State` == 'Melilla'),'Ceuta y Melilla',`Province/State`)) %>%
     # Lat / Long
-    dplyr::group_by(adm0_a3,Date,`Country/Region`,`Province/State`,`Total Confirmed`,`Total Deaths`) %>%
+    dplyr::group_by(adm0_a3,Date,`Country/Region`,`Province/State`,`Total Confirmed`,`Total Deaths`,iTot_Confirmed,iTot_Deaths) %>%
     dplyr::summarize(Confirmed = sum(Confirmed),
       Deaths = sum(Deaths),
+      i_Confirmed = sum(i_Confirmed),
+      i_Deaths = sum(i_Deaths),
       Lat = mean(Lat), 
       Long = mean(Long)) %>%
     # unique() %>%
