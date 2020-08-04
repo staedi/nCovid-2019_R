@@ -273,7 +273,7 @@ plot_leaflet <- function(data, col='Confirmed') {
     map
     }
 
-plot_heatmap <- function(covid, type) {
+plot_heatmap <- function(covid, type, limit=25) {
   if (type == 'global') {
     cand <- covid %>%
       dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
@@ -304,7 +304,7 @@ plot_heatmap <- function(covid, type) {
   if (type == 'global') {
     for (iter in 1:2) {
       if (iter==1) {
-        cand_cty <- as.vector(cand[cand$rn_tc<=30,'adm0_a3']$adm0_a3)
+        cand_cty <- as.vector(cand[cand$rn_tc<=limit,'adm0_a3']$adm0_a3)
         target_col <- 'iTot_Confirmed'
         target_text <- 'infections'
         lvl <- covid %>%
@@ -313,7 +313,7 @@ plot_heatmap <- function(covid, type) {
           dplyr::distinct(`Country/Region`)
         }
       else {
-        cand_cty <- as.vector(cand[cand$rn_td<=30,'adm0_a3']$adm0_a3)
+        cand_cty <- as.vector(cand[cand$rn_td<=limit,'adm0_a3']$adm0_a3)
         target_col <- 'iTot_Deaths'
         target_text <- 'casualties'
         lvl <- covid %>%
@@ -342,7 +342,7 @@ plot_heatmap <- function(covid, type) {
         # ggplot2::coord_fixed(ratio=ratio) +
         ggplot2::scale_x_date(expand=c(0,0))+
         ggplot2::theme_grey(base_size=8) +
-        ggplot2::theme(aspect.ratio = 1,
+        ggplot2::theme(#aspect.ratio = 1,
                        # legend.position="right",legend.direction="vertical",
                        legend.title=ggplot2::element_text(colour=textcol,size=7,face="bold"),
                        legend.text=ggplot2::element_text(colour=textcol,size=6),
@@ -370,7 +370,7 @@ plot_heatmap <- function(covid, type) {
     for (cty in unique(cand$adm0_a3)) {
       for (iter in 1:2) {
         if (iter==1) {
-          cand_state <- as.vector(cand[cand$rn_tc<=30 & cand$adm0_a3==cty,'Province/State']$`Province/State`)
+          cand_state <- as.vector(cand[cand$rn_tc<=limit & cand$adm0_a3==cty,'Province/State']$`Province/State`)
           target_col <- 'i_Confirmed'
           target_text <- 'infections'
           lvl <- covid %>%
@@ -380,7 +380,7 @@ plot_heatmap <- function(covid, type) {
           max_cty <- max(covid[covid$adm0_a3 == cty,'Total Confirmed'])
           }
         else {
-          cand_state <- as.vector(cand[cand$rn_td<30 & cand$adm0_a3==cty,'Province/State']$`Province/State`)
+          cand_state <- as.vector(cand[cand$rn_td<=limit & cand$adm0_a3==cty,'Province/State']$`Province/State`)
           target_col <- 'i_Deaths'
           target_text <- 'casualties'
           lvl <- covid %>%
@@ -412,7 +412,7 @@ plot_heatmap <- function(covid, type) {
           # ggplot2::coord_fixed(ratio=ratio) +
           ggplot2::scale_x_date(expand=c(0,0))+
           ggplot2::theme_grey(base_size=8) +
-          ggplot2::theme(aspect.ratio = 1,
+          ggplot2::theme(#aspect.ratio = 1,
                          # legend.position="right",legend.direction="vertical",
                          legend.title=ggplot2::element_text(colour=textcol,size=7,face="bold"),
                          legend.text=ggplot2::element_text(colour=textcol,size=6),
