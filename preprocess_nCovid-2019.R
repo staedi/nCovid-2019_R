@@ -70,13 +70,13 @@ clean_data <- function() {
   wc <<- wc %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
-    subset(select=-c(FIPS))
+    subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
   wd <<- wd %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
-    subset(select=-c(FIPS))
+    subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
   # type_u = grepl('^u',deparse(substitute(data)))
@@ -85,7 +85,7 @@ clean_data <- function() {
     dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter(Lat != 0 | Long != 0) %>%
-    subset(select=-c(FIPS))
+    subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
   ud <<- ud %>%
@@ -93,7 +93,7 @@ clean_data <- function() {
     dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter(Lat != 0 | Long != 0) %>%
-    subset(select=-c(FIPS))
+    subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 }
 
@@ -101,7 +101,8 @@ group_data <- function(dataframe,cutoff=60) {
   dataname = deparse(substitute(dataframe))
   if (dataname == 'confirmed') {
     dataframe <- dataframe %>%
-      tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
+      # tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
+      tidyr::gather(key=Date,value=Confirmed,-'Country/Region',-'Province/State',-adm0_a3) %>%
       dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
       Confirmed = dplyr::if_else(is.na(Confirmed),0,Confirmed)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
@@ -123,7 +124,8 @@ group_data <- function(dataframe,cutoff=60) {
   }
   else if (dataname == 'deaths') {
     dataframe <- dataframe %>%
-      tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
+      # tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3,-Lat,-Long) %>%
+      tidyr::gather(key=Date,value=Deaths,-'Country/Region',-'Province/State',-adm0_a3) %>%
       dplyr::mutate(Date = as.Date(Date,format="%m/%d/%y"),
       Deaths = dplyr::if_else(is.na(Deaths),0,Deaths)) %>%
       # dplyr::filter(Date == max(Date,na.rm=TRUE) | (lubridate::day(Date)%%5) %in% c(0,5)) %>%
@@ -190,8 +192,9 @@ merge_dataset <- function(wc, wd, uc, ud, cutoff, allow_minus) {
                      Deaths = sum(Deaths),
                      i_Confirmed = sum(i_Confirmed),
                      i_Deaths = sum(i_Deaths),
-                     Lat = mean(Lat), 
-                     Long = mean(Long)) %>%
+                    #  Lat = mean(Lat), 
+                    #  Long = mean(Long)
+                     ) %>%
     # unique() %>%
     dplyr::ungroup()
 

@@ -169,7 +169,7 @@ clean_spdata <- function(spframe) {
   return (spframe)
   }
 
-merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE) {
+merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE,granularity="state") {
   # Preprocess Covid data
   read_file(git_path, file_list, remote)
   clean_data()
@@ -184,8 +184,8 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE) {
 
   # covid$merge_type = 'country'
   covid <<- covid %>%
-    dplyr::mutate(merge_type = dplyr::if_else((adm0_a3=='CAN' | adm0_a3=='USA' | adm0_a3=='AUS' | adm0_a3=='BRA') & !is.na(`Province/State`),'state','country'),
-                  merge_type = dplyr::if_else(adm0_a3 %in% unique(gadm_sf$adm0_a3),'gadm',merge_type)) %>%
+    dplyr::mutate(merge_type = dplyr::if_else(adm0_a3 %in% c('CAN','USA','BRA','AUS') & !is.na(`Province/State`) & granularity %in% c('state','gadm'),'state','country'),
+                  merge_type = dplyr::if_else(adm0_a3 %in% unique(gadm_sf$adm0_a3) & granularity=='gadm','gadm',merge_type)) %>%
     dplyr::group_by(adm0_a3,Date) %>%
     dplyr::mutate(merge_type = max(merge_type),
                   groups = dplyr::n()) %>%
@@ -198,12 +198,14 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE) {
                   Deaths = dplyr::if_else(merge_type=='country',`Total Deaths`,Deaths),
                   i_Confirmed = dplyr::if_else(merge_type=='country',`iTot_Confirmed`,i_Confirmed),
                   i_Deaths = dplyr::if_else(merge_type=='country',`iTot_Deaths`,i_Deaths),
-                  Lat = ifelse(merge_type=='country' & groups > 1 & !is.na(`Province/State`),NA,Lat),
-                  Long = ifelse(merge_type=='country' & groups > 1 & !is.na(`Province/State`),NA,Long),
+                  # Lat = ifelse(merge_type=='country' & groups > 1 & !is.na(`Province/State`),NA,Lat),
+                  # Long = ifelse(merge_type=='country' & groups > 1 & !is.na(`Province/State`),NA,Long),
                   `Province/State` = ifelse(merge_type=='country' & groups > 1,NA,`Province/State`),
-                  Lat = min(Lat,na.rm=TRUE),
-                  Long = min(Long,na.rm=TRUE)) %>%
-    dplyr::group_by(adm0_a3,`Country/Region`,`Province/State`,merge_type,Date,Lat,Long,Confirmed,Deaths,`Total Confirmed`,`Total Deaths`,i_Confirmed,i_Deaths,iTot_Confirmed,iTot_Deaths) %>%
+                  # Lat = min(Lat,na.rm=TRUE),
+                  # Long = min(Long,na.rm=TRUE)
+                  ) %>%
+    # dplyr::group_by(adm0_a3,`Country/Region`,`Province/State`,merge_type,Date,Lat,Long,Confirmed,Deaths,`Total Confirmed`,`Total Deaths`,i_Confirmed,i_Deaths,iTot_Confirmed,iTot_Deaths) %>%
+    dplyr::group_by(adm0_a3,`Country/Region`,`Province/State`,merge_type,Date,Confirmed,Deaths,`Total Confirmed`,`Total Deaths`,i_Confirmed,i_Deaths,iTot_Confirmed,iTot_Deaths) %>%
     dplyr::summarize() %>%
     dplyr::ungroup()
 
@@ -221,8 +223,7 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE) {
   combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
   }
 
-# Don't try to save to a html file in RStudio!!
-plot_leaflet <- function(data) {
+plot_leaflet <- function(data, col='Confirmed') {
   data <- data %>%
     dplyr::filter(Date == max(Date,na.rm=TRUE))
 
@@ -236,14 +237,15 @@ plot_leaflet <- function(data) {
            " / ",prettyNum(data$`Total Deaths`,big.mark=','))
     ) %>% lapply(htmltools::HTML)
   
-  pal <- leaflet::colorNumeric("YlOrRd",data$Confirmed)
+  pal <- leaflet::colorNumeric("YlOrRd",data[[col]])
 
   map <- data %>%
     # dplyr::filter(Date == max(Date,na.rm=TRUE)) %>%
     leaflet::leaflet() %>%
     leaflet::addTiles() %>%
     leaflet::addPolygons(
-      fillColor = ~pal(data$Confirmed),
+      # fillColor = ~pal(data$Confirmed),
+      fillColor = ~pal(data[[col]]),
       weight = 2,
       opacity = 1,
       color = 'white',
@@ -262,9 +264,10 @@ plot_leaflet <- function(data) {
                                    bringToFront = TRUE)
       ) %>%
     leaflet::addLegend(pal = pal,
-    values = ~data$Confirmed,
+    values = ~data[[col]],
+    # values = ~data$Confirmed,
     opacity = 0.7,
-    title = 'Confirmed (Country & State Level)',
+    title = paste(col,'(Country & State Level)'),
     position = 'bottomright')
 
     map
