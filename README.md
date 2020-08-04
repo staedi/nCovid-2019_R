@@ -5,13 +5,16 @@ Primarily used with `Leaflet`, `geom_tile` for now.
 
 Probably extended with Animation (`plotlyr`)
 
-Primary objectives
+## Primary objectives
 * Overlay Infections and Deaths for **State / Country** on a map (`Leaflet`)
 * Develop a heatmap of the daily increases of infections and deaths of top-N countries/states (`geom_tile`)
 * Generate summary file using raw time-series from [Johns Hopkins University Github](https://github.com/CSSEGISandData/COVID-19) to facilitate state-level data for more countries
 * Employ Facet/arrangeGrob for to combine infections/deaths in one graphics (`arrangeGrob` chosen)
 
-Future Developments
+## Caution
+This module employs several rds files of countries with filesize of over a few MBs. As a result, the performance of maps is not optimized. While it will draw successfully a Leaflet interactive map, saving it on `RStudio` is *strongly discouraged*. **It can hang your RStudio processes.**
+
+## Future Developments
 * Different statistical methods (e.g., moving average)
 * Employ more relevant data
   * [Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving
