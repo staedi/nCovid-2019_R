@@ -12,7 +12,7 @@ Probably extended with Animation (`plotlyr`)
 * Employ Facet/arrangeGrob for to combine infections/deaths in one graphics (`arrangeGrob` chosen)
 
 ## Caution
-This module employs several rds files of countries with filesize of over a few MBs. As a result, the performance of maps is not optimized. While it will draw successfully a Leaflet interactive map, saving it on `RStudio` is *strongly discouraged*. **It can hang your RStudio processes.**
+This module employs several rds files of countries with filesize of over a few MBs. Depending on **granularity** option, the performance of mapping will be seriously degraded (e.g., `gadm` option, which makes use of rds files from [GADM](http://gadm.org/download_world.html)). While it will successfully draw a Leaflet interactive map, saving it on `RStudio` is *strongly discouraged*. **It can hang your RStudio processes.**
 
 ## Future Developments
 * Different statistical methods (e.g., moving average)
