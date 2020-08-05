@@ -15,7 +15,7 @@ Probably extended with Animation (`plotlyr`)
 This module employs several rds files of countries with filesize of over a few MBs. Depending on **granularity** option, the performance of mapping will be seriously degraded (e.g., `gadm` option, which makes use of rds files from [GADM](http://gadm.org/download_world.html)). While it will successfully draw a Leaflet interactive map, saving it on `RStudio` is *strongly discouraged*. **It can hang your RStudio processes.**
 
 ## Future Developments
-* Different statistical methods (e.g., moving average)
+* Different statistical methods (e.g., moving average, per 100K populations)
 * Employ more relevant data
   * [Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving
   * [Google mobility data](https://www.google.com/covid19/mobility/): Transporation and general trends
