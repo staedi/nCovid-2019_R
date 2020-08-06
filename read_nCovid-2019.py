@@ -1,3 +1,6 @@
+#pylint: disable=unused-variable
+#pylint: disable=anomalous-backslash-in-string
+
 import pandas as pd
 import sys
 import os
@@ -145,19 +148,24 @@ def read_appendfile():
             new_wd.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Deaths':column_name},inplace=True)
     
         except HTTPError:   # Data backlog or time differences
-            print("One or more file(s) not found")
+            print("No global daily series file(s) found")
             break
 
     # Read US Summary data and save to local
     for iter,type in enumerate(['uc','ud']):
         file_path = summary_path+src_path[type]
+        if type == 'uc':
+            file_type = 'infections'
+        else:
+            file_type = 'deaths'
         try:
-            print("Reading US summary data with the filename of "+src_path[type])
+            print("Reading US summary data of "+file_type)
             ds = pd.read_csv(file_path) # US summary data
+            print("Writing US summary data of "+file_type)
             write_file(ds,type,write_date)
 
         except HTTPError:   # Data backlog or time differences
-            print("One or more file(s) not found")
+            print("One or more file(s) for US summary data not found")
             break
 
     # Write to files
@@ -169,6 +177,6 @@ def read_appendfile():
         write_file(new_wd,'new_wd',write_date)
 
     else:
-        print("Update is not required!")
+        print("Global summary data update is not required!")
 
 read_appendfile()
