@@ -59,17 +59,22 @@ def clean_data(time_series):
 #     conv.rename(columns={'Lat_x':'Lat','Long_':'Long','Province_State':'Province/State','Country_Region':'Country/Region'},inplace=True)
 #     return conv
 
-def write_file(data,type,date):
+def write_file(data,type,date,src_path=src_path):
     # first = ['Province/State','Country/Region']
-    cols = list(data)
-    idx1 = cols.index('Province/State')
-    idx2 = cols.index('Lat')
-    data = data[cols[idx1:idx1+2]+cols[idx2:idx2+2]+cols[:idx1]+cols[idx2+2:]]
-    
-    if type == 'wc':
-        filename = 'data/time_series_covid19_confirmed_global_'+date+'.csv'
+    # print(type)
+    # print(src_path[type.split('_')])
+    if type.split('_')[0] == 'new':
+        cols = list(data)
+        idx1 = cols.index('Province/State')
+        idx2 = cols.index('Lat')
+        data = data[cols[idx1:idx1+2]+cols[idx2:idx2+2]+cols[:idx1]+cols[idx2+2:]]
+
+    if type.split('_')[0] == 'new':
+        filename = 'data/'+src_path[type.split('_')[1]]
+    elif type[:1]=='u':
+        filename = 'data/'+src_path[type]
     else:
-        filename = 'data/time_series_covid19_deaths_global_'+date+'.csv'
+        filename = 'data/'+src_path[type.split('_')[1]]+'_'+date+'_old.csv'
 
     data.to_csv(filename,index=False)
 
@@ -78,6 +83,8 @@ def read_appendfile():
     # Read current file (-5/13)
     last_wc = pd.read_csv("data/"+src_path['wc'])
     last_wd = pd.read_csv("data/"+src_path['wd'])
+    new_wc = last_wc.copy()
+    new_wd = last_wd.copy()
     # geo = pd.read_csv("data/"+src_path['geo'])
 
     # bool_us = (geo['Combined_Key'].str.contains('US')==False)
@@ -100,51 +107,67 @@ def read_appendfile():
         # Generate file path on Github
         file_path = daily_path+file_list
         try:
-            print("Reading file of "+file_list)
+            print("Reading Daily global data with the filename: "+file_list)
             ds = pd.read_csv(file_path,usecols=read_columns) # daily timeseries
             ds = clean_data(ds)
 
             write_date = file_list.split('.')[0]
             column_name = set_colname(file_list.split('.')[0])
 
-            if column_name in last_wc.columns:
-                last_wc.drop(column_name,axis=1,inplace=True)
-            if column_name in last_wd.columns:
-                last_wd.drop(column_name,axis=1,inplace=True)
+            if column_name in new_wc.columns:
+                new_wc = new_wc.drop(column_name,axis=1)
+            if column_name in new_wd.columns:
+                new_wd = new_wd.drop(column_name,axis=1)
             
-            last_wc = pd.merge(last_wc,ds[['Province_State','Country_Region','Lat','Long_','Confirmed']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
-            last_wd = pd.merge(last_wd,ds[['Province_State','Country_Region','Lat','Long_','Deaths']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
+            new_wc = pd.merge(new_wc,ds[['Province_State','Country_Region','Lat','Long_','Confirmed']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
+            new_wd = pd.merge(new_wd,ds[['Province_State','Country_Region','Lat','Long_','Deaths']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
             
-            last_wc.loc[last_wc['Province_State'].isnull(),'Province_State'] = last_wc.loc[last_wc['Province_State'].isnull(),'Province/State']
-            last_wc.loc[last_wc['Country_Region'].isnull(),'Country_Region'] = last_wc.loc[last_wc['Country_Region'].isnull(),'Country/Region']
-            last_wd.loc[last_wd['Province_State'].isnull(),'Province_State'] = last_wd.loc[last_wd['Province_State'].isnull(),'Province/State']
-            last_wd.loc[last_wd['Country_Region'].isnull(),'Country_Region'] = last_wd.loc[last_wd['Country_Region'].isnull(),'Country/Region']
+            new_wc.loc[new_wc['Province_State'].isnull(),'Province_State'] = new_wc.loc[new_wc['Province_State'].isnull(),'Province/State']
+            new_wc.loc[new_wc['Country_Region'].isnull(),'Country_Region'] = new_wc.loc[new_wc['Country_Region'].isnull(),'Country/Region']
+            new_wd.loc[new_wd['Province_State'].isnull(),'Province_State'] = new_wd.loc[new_wd['Province_State'].isnull(),'Province/State']
+            new_wd.loc[new_wd['Country_Region'].isnull(),'Country_Region'] = new_wd.loc[new_wd['Country_Region'].isnull(),'Country/Region']
 
             # print(last_wc)
             # print(last_wc.columns)
 
-            last_wc.loc[last_wc['Lat_y'].isnull(),'Lat_y'] = last_wc.loc[last_wc['Lat_y'].isnull(),'Lat_x']
-            last_wc.loc[last_wc['Long_'].isnull(),'Long_'] = last_wc.loc[last_wc['Long_'].isnull(),'Long']
-            last_wd.loc[last_wd['Lat_y'].isnull(),'Lat_y'] = last_wd.loc[last_wd['Lat_y'].isnull(),'Lat_x']
-            last_wd.loc[last_wd['Long_'].isnull(),'Long_'] = last_wd.loc[last_wd['Long_'].isnull(),'Long']
+            new_wc.loc[new_wc['Lat_y'].isnull(),'Lat_y'] = new_wc.loc[new_wc['Lat_y'].isnull(),'Lat_x']
+            new_wc.loc[new_wc['Long_'].isnull(),'Long_'] = new_wc.loc[new_wc['Long_'].isnull(),'Long']
+            new_wd.loc[new_wd['Lat_y'].isnull(),'Lat_y'] = new_wd.loc[new_wd['Lat_y'].isnull(),'Lat_x']
+            new_wd.loc[new_wd['Long_'].isnull(),'Long_'] = new_wd.loc[new_wd['Long_'].isnull(),'Long']
 
 
-            last_wc.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
-            last_wd.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
+            new_wc.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
+            new_wd.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
     
             #'/'.join(map(str,list(map(int,file_list.split('.')[0].split('-')))))
 
-            last_wc.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Confirmed':column_name},inplace=True)
-            last_wd.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Deaths':column_name},inplace=True)
+            new_wc.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Confirmed':column_name},inplace=True)
+            new_wd.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Deaths':column_name},inplace=True)
     
+        except HTTPError:   # Data backlog or time differences
+            print("One or more file(s) not found")
+            break
+
+    # Read US Summary data and save to local
+    for iter,type in enumerate(['uc','ud']):
+        file_path = summary_path+src_path[type]
+        try:
+            print("Reading US summary data with the filename of "+src_path[type])
+            ds = pd.read_csv(file_path) # US summary data
+            write_file(ds,type,write_date)
+
         except HTTPError:   # Data backlog or time differences
             print("One or more file(s) not found")
             break
 
     # Write to files
     if write_date != '':
-        write_file(last_wc,'wc',write_date)
-        write_file(last_wd,'wd',write_date)
+        print("Writing file(s)")
+        write_file(last_wc,'last_wc',write_date)
+        write_file(last_wd,'last_wd',write_date)
+        write_file(new_wc,'new_wc',write_date)
+        write_file(new_wd,'new_wd',write_date)
+
     else:
         print("Update is not required!")
 
