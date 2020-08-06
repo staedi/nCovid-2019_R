@@ -83,7 +83,7 @@ clean_spdata <- function(spframe) {
                     `Province/State` = stringr::str_replace(`Province/State`,'[ñ]','n'),
                     `Province/State` = stringr::str_replace(`Province/State`,'[ñ]','N'),
                     merge_type = 'gadm') %>%
-          
+
       dplyr::mutate(`Province/State` = dplyr::if_else(grepl('Aisen',`Province/State`),'Aysen',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Bio-',`Province/State`),'Biobio',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('OHiggins',`Province/State`),'OHiggins',`Province/State`),
@@ -108,7 +108,7 @@ clean_spdata <- function(spframe) {
                     `Province/State` = dplyr::if_else(grepl('N.W.F.P.',`Province/State`),'Khyber Pakhtunkhwa',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Northern Areas',`Province/State`),'Gilgit-Baltistan',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Sind',`Province/State`),'Sindh',`Province/State`),
-              
+
                     # Russia (Oblask, Republic) (Jewish Autonomous -> Yevrey, Moscow -> Moscow City / Moscow Oblast -> Moskva)
                     `Province/State` = dplyr::if_else(grepl('Adygey',`Province/State`),'Adygea',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Altay',`Province/State`),'Altai Krai',`Province/State`),
@@ -139,7 +139,7 @@ clean_spdata <- function(spframe) {
                     `Province/State` = dplyr::if_else(grepl('Tuva',`Province/State`),'Tyva',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Yamal-Nenets',`Province/State`),'Yamalo-Nenets',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Zabaykal',`Province/State`),'Zabaykalsky Krai',`Province/State`),
-              
+
                     # Spain (Ceuta / Melilla -> Ceuta y Melilla)
                     `Province/State` = dplyr::if_else(grepl('Andalucia',`Province/State`),'Andalusia',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Asturias',`Province/State`),'Asturias',`Province/State`),
@@ -152,20 +152,20 @@ clean_spdata <- function(spframe) {
                     `Province/State` = dplyr::if_else(grepl('Navarra',`Province/State`),'Navarra',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Jamtland',`Province/State`),'Jamtland Harjedalen',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Sodermanland',`Province/State`),'Sormland',`Province/State`),
-              
+
                     # Ukraine (Oblask, Republic) (Kiev -> Kiev City)
                     `Province/State` = dplyr::if_else(grepl('Khmelnyts',`Province/State`),'Khmelnytskyi',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Mykolayiv',`Province/State`),'Mykolaiv',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Vinnytsya',`Province/State`),'Vinnytsia',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Zaporizhzhya',`Province/State`),'Zaporizhia',`Province/State`),
                     `Province/State` = dplyr::if_else(grepl('Transcarpathia',`Province/State`),'Zakarpattia',`Province/State`),
-                    
+
                     `Province/State` = stringr::str_replace(`Province/State`,'and Nicobar','and Nicobar Islands'),
                     `Province/State` = stringr::str_replace(`Province/State`,'Nagar Haveli','Nagar Haveli and Daman and Diu'),
                     `Province/State` = stringr::str_replace(`Province/State`,'Friuli-','Friuli '),
                     `Province/State` = stringr::str_replace(`Province/State`,'-Mansiy','-Mansi'),
                     `Province/State` = stringr::str_replace(`Province/State`,'-La Mancha',' - La Mancha'))
-    }    
+    }
   return (spframe)
   }
 
@@ -221,6 +221,16 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE,granularity="state
     subset(select=-c(`Country/Region.x`))
 
   combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
+  
+  global_stat <- covid %>%
+    dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
+    dplyr::group_by(adm0_a3,`Total Confirmed`,`Total Deaths`) %>%
+    dplyr::summarize() %>%
+    dplyr::ungroup() %>%
+    dplyr::summarize(global_confirmed = sum(`Total Confirmed`),
+                     global_deaths = sum(`Total Deaths`)) %>%
+    dplyr::ungroup()
+  global_stat <<- c(global_stat$global_confirmed,global_stat$global_deaths)
   }
 
 plot_leaflet <- function(data, col='Confirmed') {
@@ -236,7 +246,7 @@ plot_leaflet <- function(data, col='Confirmed') {
     paste0("<br /><strong>Deaths:</strong> ",prettyNum(data$`Deaths`,big.mark=','),
            " / ",prettyNum(data$`Total Deaths`,big.mark=','))
     ) %>% lapply(htmltools::HTML)
-  
+
   pal <- leaflet::colorNumeric("YlOrRd",data[[col]])
 
   map <- data %>%
@@ -284,7 +294,7 @@ plot_heatmap <- function(covid, type, limit=25) {
       dplyr::ungroup() %>%
       dplyr::select(adm0_a3,rn_tc,rn_td)
     }
-  
+
   else {
     cand <- covid %>%
       dplyr::filter(Date==max(Date,na.rm=TRUE) & merge_type != 'country' & !is.na(`Province/State`)) %>%
@@ -295,12 +305,12 @@ plot_heatmap <- function(covid, type, limit=25) {
       dplyr::ungroup() %>%
       dplyr::select(adm0_a3,`Province/State`,rn_tc,rn_td)
     }
-  
+
   # ratio <- length(unique(covid$Date))/length(cand)
 
   textcol <- "grey40"
   htmap <<- list()
-  
+
   if (type == 'global') {
     for (iter in 1:2) {
       if (iter==1) {
@@ -334,7 +344,7 @@ plot_heatmap <- function(covid, type, limit=25) {
         ggplot2::geom_tile(aes(fill=!!(sym(target_col))),color='white',size=0.25) +
         ggplot2::labs(x="",y="",
         title=paste0("nCovid-2019 Status as of ",max(covid$Date,na.rm=TRUE)),
-        subtitle=paste0("Daily ",target_text," increases by country"),
+        subtitle=paste0("Daily ",target_text," increases by country (Global total: ",scales::comma(global_stat[iter]),")"),
         caption="Source: Johns Hopkins University")+
         ggplot2::scale_y_discrete(expand=c(0,0))+
         ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
@@ -359,13 +369,13 @@ plot_heatmap <- function(covid, type, limit=25) {
                        plot.subtitle=ggplot2::element_text(colour=textcol,size=8)
         )
       }
-    
+
     g <<- do.call(gridExtra::arrangeGrob,htmap)
     print(paste("Saving heatmap:",type))
     ggplot2::ggsave(g,filename=paste0("saved/heatmap_",type,"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
-    
+
     }
-  
+
   else {
     for (cty in unique(cand$adm0_a3)) {
       for (iter in 1:2) {
@@ -432,7 +442,7 @@ plot_heatmap <- function(covid, type, limit=25) {
         # ggplot2::ggsave(htmap,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==iter,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
         }
       g <<- do.call(gridExtra::arrangeGrob,htmap)
-      
+
       print(paste("Saving heatmap:",unique(covid[covid$adm0_a3==cty,'Country/Region'])))
       ggplot2::ggsave(g,filename=paste0("saved/heatmap_",unique(covid[covid$adm0_a3==cty,'Country/Region']),"_",max(covid$Date,na.rm=TRUE),".png"),dpi=200)
     }
