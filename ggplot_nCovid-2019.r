@@ -222,15 +222,16 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE,granularity="state
 
   combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
   
-  global_stat <- covid %>%
+  global_stat <<- covid %>%
     dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
-    dplyr::group_by(adm0_a3,`Total Confirmed`,`Total Deaths`) %>%
+    dplyr::group_by(adm0_a3,`Total Confirmed`,`Total Deaths`,iTot_Confirmed,iTot_Deaths) %>%
     dplyr::summarize() %>%
     dplyr::ungroup() %>%
-    dplyr::summarize(global_confirmed = sum(`Total Confirmed`),
-                     global_deaths = sum(`Total Deaths`)) %>%
+    dplyr::summarize(total_confirmed = sum(`Total Confirmed`),
+                     total_deaths = sum(`Total Deaths`),
+                     inc_confirmed = sum(iTot_Confirmed),
+                     inc_deaths = sum(iTot_Deaths)) %>%
     dplyr::ungroup()
-  global_stat <<- c(global_stat$global_confirmed,global_stat$global_deaths)
   }
 
 plot_leaflet <- function(data, col='Confirmed') {
@@ -321,6 +322,7 @@ plot_heatmap <- function(covid, type, limit=25) {
           dplyr::filter(adm0_a3 %in% cand_cty & Date==max(Date,na.rm=TRUE)) %>%
           dplyr::arrange(`Total Confirmed`) %>%
           dplyr::distinct(`Country/Region`)
+        summary_stat <- c(global_stat$total_confirmed,global_stat$inc_confirmed)
         }
       else {
         cand_cty <- as.vector(cand[cand$rn_td<=limit,'adm0_a3']$adm0_a3)
@@ -330,6 +332,7 @@ plot_heatmap <- function(covid, type, limit=25) {
           dplyr::filter(adm0_a3 %in% cand_cty & Date==max(Date,na.rm=TRUE)) %>%
           dplyr::arrange(`Total Deaths`) %>%
           dplyr::distinct(`Country/Region`)
+        summary_stat <- c(global_stat$total_deaths,global_stat$inc_deaths)
         }
       lvl <- as.vector(lvl$`Country/Region`)
       min_val <- min(covid[covid$adm0_a3 %in% cand_cty,target_col])
@@ -343,8 +346,8 @@ plot_heatmap <- function(covid, type, limit=25) {
         ggplot2::ggplot(mapping=aes(x=Date,y=`Country/Region`)) +
         ggplot2::geom_tile(aes(fill=!!(sym(target_col))),color='white',size=0.25) +
         ggplot2::labs(x="",y="",
-        title=paste0("nCovid-2019 Status as of ",max(covid$Date,na.rm=TRUE)),
-        subtitle=paste0("Daily ",target_text," increases by country (Global total: ",scales::comma(global_stat[iter]),")"),
+        title=paste("Global nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
+        subtitle=paste0("Daily ",target_text," increases by country (Global total: ",scales::comma(summary_stat[1])," / increases: ",scales::comma(summary_stat[2]),")"),
         caption="Source: Johns Hopkins University")+
         ggplot2::scale_y_discrete(expand=c(0,0))+
         ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
@@ -387,7 +390,8 @@ plot_heatmap <- function(covid, type, limit=25) {
             dplyr::filter(adm0_a3 == cty & `Province/State` %in% cand_state & Date==max(Date,na.rm=TRUE)) %>%
             dplyr::arrange(`Confirmed`) %>%
             dplyr::distinct(`Province/State`)
-          max_cty <- max(covid[covid$adm0_a3 == cty,'Total Confirmed'])
+          total_cty <- max(covid[covid$adm0_a3 == cty,'Total Confirmed'])
+          inc_cty <- max(covid[covid$adm0_a3 == cty,'iTot_Confirmed'])
           }
         else {
           cand_state <- as.vector(cand[cand$rn_td<=limit & cand$adm0_a3==cty,'Province/State']$`Province/State`)
@@ -397,13 +401,13 @@ plot_heatmap <- function(covid, type, limit=25) {
             dplyr::filter(adm0_a3 == cty & `Province/State` %in% cand_state & Date==max(Date,na.rm=TRUE)) %>%
             dplyr::arrange(`Deaths`) %>%
             dplyr::distinct(`Province/State`)
-            max_cty <- max(covid[covid$adm0_a3 == cty,'Total Deaths'])
+            total_cty <- max(covid[covid$adm0_a3 == cty,'Total Deaths'])
+            inc_cty <- max(covid[covid$adm0_a3 == cty,'iTot_Deaths'])
             }
         lvl <- as.vector(lvl$`Province/State`)
         min_val <- min(covid[covid$adm0_a3 == cty & covid$`Province/State` %in% cand_state & !is.na(covid$`Province/State`),target_col])
         # min_val <- ifelse(min_val<0,0,min_val)
         max_val <- max(covid[covid$adm0_a3 == cty & covid$`Province/State` %in% cand_state & !is.na(covid$`Province/State`),target_col])
-        # max_cty <- max(covid[covid$adm0_a3 == cty,paste('Total',target_col)])
 
         htmap[[iter]] <<- covid %>%
           dplyr::filter(adm0_a3 == cty & `Province/State` %in% cand_state) %>%
@@ -412,8 +416,8 @@ plot_heatmap <- function(covid, type, limit=25) {
           ggplot2::ggplot(mapping=aes(x=Date,y=`Province/State`)) +
           ggplot2::geom_tile(aes(fill=!!(sym(target_col))),color='white',size=0.25) +
           ggplot2::labs(x="",y="",
-          title=paste0(unique(covid[covid$adm0_a3 == cty,'Country/Region'])," nCovid-2019 Status as of ",max(covid$Date,na.rm=TRUE)),
-          subtitle=paste0("Daily ",target_text," increases by State/Province (",unique(covid[covid$adm0_a3 == cty,'Country/Region'])," total: ",scales::comma(max_cty),")"),
+          title=paste(unique(covid[covid$adm0_a3 == cty,'Country/Region']),"nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
+          subtitle=paste0("Daily ",target_text," increases by State/Province (",unique(covid[covid$adm0_a3 == cty,'Country/Region'])," total: ",scales::comma(total_cty)," / increases: ",scales::comma(inc_cty),")"),
           caption="Source: Johns Hopkins University")+
           ggplot2::scale_y_discrete(expand=c(0,0))+
           # ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma) +
