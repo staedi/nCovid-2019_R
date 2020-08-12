@@ -17,9 +17,9 @@ This module employs several rds files of countries with filesize of over a few M
 ## Future Developments
 * Different statistical methods (e.g., moving average, per 100K populations)
 * Employ more relevant data
-  * [Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving
-  * [Google mobility data](https://www.google.com/covid19/mobility/): Transporation and general trends
-  * [Bureau of Labor Statistics](https://www.bls.gov/covid19/home.htm): Consumer Pricing and Job market statistics
+  * ~~[Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving~~
+  * ~~[Google mobility data](https://www.google.com/covid19/mobility/): Transporation and general trends~~
+  * [Bureau of Labor Statistics](https://www.bls.gov/covid19/home.htm): International Labor Statistics
   * [Federal Reserve of St. Louis](https://research.stlouisfed.org/resources/covid-19/): Overall economics statistics
 * Employ animations for mapping (`shiny` with `Leaflet`)
 * Animate heatmap (`plotlyr`)
