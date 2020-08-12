@@ -7,6 +7,7 @@ import os
 import inspect
 from datetime import date, timedelta
 from urllib.error import HTTPError
+from urllib.request import urlretrieve
 
 src_path = {'wc':'time_series_covid19_confirmed_global.csv','wd':'time_series_covid19_deaths_global.csv','uc':'time_series_covid19_confirmed_US.csv','ud':'time_series_covid19_deaths_US.csv','geo':'UID_ISO_FIPS_LookUp_Table.csv'}
 summary_path = 'https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/'
@@ -18,7 +19,7 @@ def set_colname(dates):
     list_date[2] = list_date[2][:2]
     list_date = '/'.join(list_date)
     return list_date
-    
+
 def get_datelist(last_wc):
     # Get last available date to applicable form
     last_date = last_wc.columns[-1].split('/')
@@ -35,13 +36,13 @@ def get_datelist(last_wc):
     start_dt = date(last_date[2],last_date[0],last_date[1])
     end_dt = date.today()
     appendlist = [(start_dt + timedelta(days=x)).strftime('%m-%d-%Y')+'.csv' for x in range(1,(end_dt-start_dt).days + 1)]
-    
+
     return appendlist
 
 def clean_data(time_series):
     # Non-US data
     bool_time_series = (time_series['Country_Region']!='US')
-    
+
     # Generate US Summury Stat
     us_stat = time_series.loc[bool_time_series==False,].groupby(['Country_Region'])[['Confirmed','Deaths']].sum()
 
@@ -50,7 +51,7 @@ def clean_data(time_series):
 
     # Add US Summary Stat
     time_series = time_series.append(pd.DataFrame([['US',40,-100,int(us_stat['Confirmed']),int(us_stat['Deaths'])]],columns=['Country_Region','Lat','Long_','Confirmed','Deaths']))
-    
+
     return time_series
 
 # def conv_lastfile(src,geo):
@@ -74,8 +75,8 @@ def write_file(data,type,date,src_path=src_path):
 
     if type.split('_')[0] == 'new':
         filename = 'data/'+src_path[type.split('_')[1]]
-    elif type[:1]=='u':
-        filename = 'data/'+src_path[type]
+    # elif type[:1]=='u':
+    #     filename = 'data/'+src_path[type]
     else:
         filename = 'data/'+src_path[type.split('_')[1]]+'_'+date+'_old.csv'
 
@@ -121,10 +122,10 @@ def read_appendfile():
                 new_wc = new_wc.drop(column_name,axis=1)
             if column_name in new_wd.columns:
                 new_wd = new_wd.drop(column_name,axis=1)
-            
+
             new_wc = pd.merge(new_wc,ds[['Province_State','Country_Region','Lat','Long_','Confirmed']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
             new_wd = pd.merge(new_wd,ds[['Province_State','Country_Region','Lat','Long_','Deaths']],how='outer',left_on=['Province/State','Country/Region'],right_on=['Province_State','Country_Region'])
-            
+
             new_wc.loc[new_wc['Province_State'].isnull(),'Province_State'] = new_wc.loc[new_wc['Province_State'].isnull(),'Province/State']
             new_wc.loc[new_wc['Country_Region'].isnull(),'Country_Region'] = new_wc.loc[new_wc['Country_Region'].isnull(),'Country/Region']
             new_wd.loc[new_wd['Province_State'].isnull(),'Province_State'] = new_wd.loc[new_wd['Province_State'].isnull(),'Province/State']
@@ -141,14 +142,14 @@ def read_appendfile():
 
             new_wc.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
             new_wd.drop(['Province/State','Country/Region','Lat_x','Long'],axis=1,inplace=True)
-    
+
             #'/'.join(map(str,list(map(int,file_list.split('.')[0].split('-')))))
 
             new_wc.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Confirmed':column_name},inplace=True)
             new_wd.rename(columns={'Province_State':'Province/State','Country_Region':'Country/Region','Lat_y':'Lat','Long_':'Long','Deaths':column_name},inplace=True)
-    
+
         except HTTPError:   # Data backlog or time differences
-            print("No global daily series file(s) found")
+            print(file_list+" not found")
             break
 
     # Read US Summary data and save to local
@@ -159,10 +160,13 @@ def read_appendfile():
         else:
             file_type = 'deaths'
         try:
-            print("Reading US summary data of "+file_type)
-            ds = pd.read_csv(file_path) # US summary data
-            print("Writing US summary data of "+file_type)
-            write_file(ds,type,write_date)
+            print("Attempting to retrieve US summary data of "+file_type)
+            filename = 'data/'+src_path[type]
+            urlretrieve(file_path,filename)  # US summary data
+            # print("Reading US summary data of "+file_type)
+            # # ds = pd.read_csv(file_path) # US summary data
+            print("US summary data of "+file_type+" successfully retreieved")
+            # write_file(ds,type,write_date)
 
         except HTTPError:   # Data backlog or time differences
             print("One or more file(s) for US summary data not found")
@@ -170,12 +174,12 @@ def read_appendfile():
 
     # Write to files
     if write_date != '':
-        print("Writing file(s)")
+        print("Updating global data file(s)")
         write_file(last_wc,'last_wc',write_date)
         write_file(last_wd,'last_wd',write_date)
         write_file(new_wc,'new_wc',write_date)
         write_file(new_wd,'new_wd',write_date)
-
+        print("Global data file(s) successfully updated")
     else:
         print("Global summary data update is not required!")
 
