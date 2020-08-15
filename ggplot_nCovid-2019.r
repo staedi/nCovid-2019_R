@@ -221,7 +221,7 @@ merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE,granularity="state
     subset(select=-c(`Country/Region.x`))
 
   combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
-  
+
   global_stat <<- covid %>%
     dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
     dplyr::group_by(adm0_a3,`Total Confirmed`,`Total Deaths`,iTot_Confirmed,iTot_Deaths) %>%
@@ -348,7 +348,7 @@ plot_heatmap <- function(covid, type, limit=25) {
         ggplot2::labs(x="",y="",
         title=paste("Global nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
         subtitle=paste0("Daily ",target_text," increases by country (Global total: ",scales::comma(summary_stat[1])," / increases: ",scales::comma(summary_stat[2]),")"),
-        caption="Source: Johns Hopkins University")+
+        caption="Source: Johns Hopkins University CSSE")+
         ggplot2::scale_y_discrete(expand=c(0,0))+
         ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
         ggplot2::guides(fill = ggplot2::guide_legend(reverse=TRUE,title=paste(stringr::str_to_title(target_text),'increases'))) +
@@ -418,7 +418,7 @@ plot_heatmap <- function(covid, type, limit=25) {
           ggplot2::labs(x="",y="",
           title=paste(unique(covid[covid$adm0_a3 == cty,'Country/Region']),"nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
           subtitle=paste0("Daily ",target_text," increases by State/Province (",unique(covid[covid$adm0_a3 == cty,'Country/Region'])," total: ",scales::comma(total_cty)," / increases: ",scales::comma(inc_cty),")"),
-          caption="Source: Johns Hopkins University")+
+          caption="Source: Johns Hopkins University CSSE")+
           ggplot2::scale_y_discrete(expand=c(0,0))+
           # ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma) +
           ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
