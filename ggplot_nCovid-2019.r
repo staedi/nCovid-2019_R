@@ -4,7 +4,7 @@ source('/Users/minpark/Documents/nCovid-2019/preprocess_nCovid-2019.R')
 # library(dplyr)
 library(ggplot2)
 library(leaflet)
-library(spdplyr)
+# library(spdplyr)
 library(sf)
 # library(gridExtra)
 # library(sp)
@@ -31,7 +31,7 @@ read_spdata <- function() {
   gadm_uk_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_GBR_1_sf.rds")
 
   for (iter in seq_along(ls()[grepl('gadm_',ls())])) {
-    print(paste("Loading shaefile:",ls()[grepl('gadm_',ls())][iter]))
+    print(paste("Loading shapefile:",ls()[grepl('gadm_',ls())][iter]))
     if (iter == 1) {
       gadm_sf <<- eval(parse(text=ls()[grepl('gadm_',ls())][iter]))
       }
@@ -169,7 +169,7 @@ clean_spdata <- function(spframe) {
   return (spframe)
   }
 
-merge_data <- function(remote='N',cutoff=60,allow_minus=FALSE,granularity="state") {
+merge_data <- function(granularity="state",cutoff=60,allow_minus=FALSE,remote='N') {
   # Preprocess Covid data
   read_file(git_path, file_list, remote)
   clean_data()
@@ -284,7 +284,7 @@ plot_leaflet <- function(data, col='Confirmed') {
     map
     }
 
-plot_heatmap <- function(covid, type, limit=25) {
+plot_heatmap <- function(covid, type='detailed', limit=25) {
   if (type == 'global') {
     cand <- covid %>%
       dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
@@ -459,4 +459,4 @@ plot_heatmap <- function(covid, type, limit=25) {
 # merge_data()
 # maps <- plot_leaflet(combined_cov)
 # plot_heatmap(covid,'global')
-# plot_heatmap(covid,'country')
+# plot_heatmap(covid,'detailed')

@@ -60,6 +60,9 @@ read_file <- function(git_path, file_list, remote) {
 }
 
 clean_data <- function() {
+  # Get minimum number of columns in statistics (reporting time gaps)
+  len_cols <- min(length(wc),length(wd),length(uc),length(ud))
+  
   # Clean geographic info
   geo <<- geo %>%
     dplyr::group_by(adm0_a3,`Province/State`,`Country/Region`) %>%
@@ -67,20 +70,20 @@ clean_data <- function() {
     dplyr::group_by(adm0_a3,`Province/State`,`Country/Region`,FIPS,Lat,Long) %>%
     dplyr::ungroup()
 
-  wc <<- wc %>%
+  wc <<- wc[,1:len_cols] %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
-  wd <<- wd %>%
+  wd <<- wd[,1:len_cols] %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
   # type_u = grepl('^u',deparse(substitute(data)))
-  uc <<- uc %>%
+  uc <<- uc[,1:len_cols] %>%
     group_by(`Country/Region`,`Province/State`) %>%
     dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
@@ -88,13 +91,14 @@ clean_data <- function() {
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
-  ud <<- ud %>%
+  ud <<- ud[,1:len_cols] %>%
     group_by(`Country/Region`,`Province/State`) %>%
     dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter(Lat != 0 | Long != 0) %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
+  
 }
 
 group_data <- function(dataframe,cutoff=60) {
