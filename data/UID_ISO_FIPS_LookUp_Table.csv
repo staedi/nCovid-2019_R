@@ -303,6 +303,24 @@ UID,iso2,iso3,code3,FIPS,Admin2,Province_State,Country_Region,Lat,Long_,Combined
 398,KZ,KAZ,398,,,,Kazakhstan,48.0196,66.9237,Kazakhstan,18776707
 404,KE,KEN,404,,,,Kenya,-0.0236,37.9062,Kenya,53771300
 410,KR,KOR,410,,,,"Korea, South",35.907757,127.766922,"Korea, South",51269183
+41001,KR,KOR,410,,,Seoul,"Korea, South",37.566667,126.966667,"Seoul, Korea, South",9715429
+41002,KR,KOR,410,,,Busan,"Korea, South",35.166667,129.066667,"Busan, Korea, South",3402776
+41003,KR,KOR,410,,,Daegu,"Korea, South",35.866667,128.6,"Daegu, Korea, South",2428022
+41004,KR,KOR,410,,,Incheon,"Korea, South",37.483333,126.633333,"Incheon, Korea, South",2945565
+41005,KR,KOR,410,,,Gwangju,"Korea, South",35.166667,126.916667,"Gwangju, Korea, South",1454709
+41006,KR,KOR,410,,,Daejeon,"Korea, South",36.351,127.385,"Daejeon, Korea, South",1470225
+41007,KR,KOR,410,,,Ulsan,"Korea, South",35.55,129.316667,"Ulsan, Korea, South",1141362
+41008,KR,KOR,410,,,Sejong,"Korea, South",36.487002,127.282234,"Sejong, Korea, South",346217
+41009,KR,KOR,410,,,Gyeonggi-do,"Korea, South",37.5,127.25,"Gyeonggi-do, Korea, South",13351891
+41010,KR,KOR,410,,,Gangwon-do,"Korea, South",37.5,128.25,"Gangwon-do, Korea, South",1540094
+41011,KR,KOR,410,,,Chungcheongbuk-do,"Korea, South",36.75,127.75,"Chungcheongbuk-do, Korea, South",1597936
+41012,KR,KOR,410,,,Chungcheongnam-do,"Korea, South",36.5,126.75,"Chungcheongnam-do, Korea, South",2120692
+41013,KR,KOR,410,,,Jeollabuk-do,"Korea, South",35.816667,127.15,"Jeollabuk-do, Korea, South",1808044
+41014,KR,KOR,410,,,Jeollanam-do,"Korea, South",34.75,127,"Jeollanam-do, Korea, South",1853339
+41015,KR,KOR,410,,,Gyeongsangbuk-do,"Korea, South",36.25,128.75,"Gyeongsangbuk-do, Korea, South",2644001
+41016,KR,KOR,410,,,Gyeongsangnam-do,"Korea, South",35.25,128.25,"Gyeongsangnam-do, Korea, South",3347637
+41017,KR,KOR,410,,,Jeju,"Korea, South",33.366667,126.533333,"Jeju, Korea, South",671913
+41018,KR,KOR,410,,,Unknown,"Korea, South",,,"Unknown, Korea, South",
 383,XK,XKS,383,,,,Kosovo,42.602636,20.902977,Kosovo,1810366
 414,KW,KWT,414,,,,Kuwait,29.31166,47.481766,Kuwait,4270563
 417,KG,KGZ,417,,,,Kyrgyzstan,41.20438,74.766098,Kyrgyzstan,6524191

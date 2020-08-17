@@ -1,12 +1,13 @@
 setwd('/Users/minpark/Documents/nCovid-2019')
 library(dplyr)
 
-file_list = list('wc'='time_series_covid19_confirmed_global.csv','wd'='time_series_covid19_deaths_global.csv','uc'='time_series_covid19_confirmed_US.csv','ud'='time_series_covid19_deaths_US.csv','geo'='UID_ISO_FIPS_LookUp_Table.csv')
+file_list = list('wc'='time_series_covid19_confirmed_global.csv','wd'='time_series_covid19_deaths_global.csv','uc'='time_series_covid19_confirmed_US.csv','ud'='time_series_covid19_deaths_US.csv','kc'='time_series_covid19_confirmed_Korea.csv','kd'='time_series_covid19_deaths_Korea.csv','geo'='UID_ISO_FIPS_LookUp_Table.csv')
 git_path = 'https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/'
 
+# Only US data can be remotely downloaded
 get_filename <- function(git_path, file_list, remote) {
   for (iter in seq_along(file_list)) {
-    if (remote == "Y") {
+    if (remote == "Y" & substr(names(file_list[iter]),1,1)=='u') {
       file_list[names(file_list[iter])] <- paste0(git_path,file_list[[iter]])
     }
     else {
@@ -21,13 +22,21 @@ read_file <- function(git_path, file_list, remote) {
   file_list <- get_filename(git_path,file_list,remote)
   
   # Read datafiles
-  # data <- readr::read_csv(file_list$type)
+  # Global data
   wc <<- readr::read_csv(file_list$wc) %>%
     subset(select=-c(Lat,Long))
 
   wd <<- readr::read_csv(file_list$wd) %>%
     subset(select=-c(Lat,Long))
 
+  # South Korea data
+  kc <<- readr::read_csv(file_list$kc) %>%
+    subset(select=-c(Lat,Long))
+  
+  kd <<- readr::read_csv(file_list$kd) %>%
+    subset(select=-c(Lat,Long))
+
+  # US data
   uc <<- readr::read_csv(file_list$uc) %>%
     dplyr::rename(#"adm0_a3" = "iso3",
                   "Province/State" = "Province_State",
@@ -59,9 +68,16 @@ read_file <- function(git_path, file_list, remote) {
   # return (data)
 }
 
-clean_data <- function() {
-  # Get minimum number of columns in statistics (reporting time gaps)
-  len_cols <- min(length(wc),length(wd),length(uc),length(ud))
+clean_data <- function(cutoff) {
+  # Get least recent date (reporting time gaps)
+  min_latest <- as.Date(min(names(wc)[length(wc)],names(wd)[length(wd)],names(kc)[length(kc)],names(kd)[length(kd)],names(uc)[length(uc)],names(ud)[length(ud)]),'%m/%d/%y')
+  max_first <- as.Date(max(names(wc)[3],names(wd)[3],names(kc)[3],names(kd)[3],names(uc)[3],names(ud)[3]),'%m/%d/%y')
+  min_date <- max(min_latest - cutoff,max_first)
+  
+  start_date <- min_date
+  end_date <- min_latest
+  
+  # len_cols <- min(length(wc),length(wd),length(uc),length(ud))
   
   # Clean geographic info
   geo <<- geo %>%
@@ -70,30 +86,42 @@ clean_data <- function() {
     dplyr::group_by(adm0_a3,`Province/State`,`Country/Region`,FIPS,Lat,Long) %>%
     dplyr::ungroup()
 
-  wc <<- wc[,1:len_cols] %>%
+  wc <<- wc[,c(1:2,match(start_date,as.Date(names(wc),'%m/%d/%y')):match(end_date,as.Date(names(wc),'%m/%d/%y')))] %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
-    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & !adm0_a3 %in% c('USA','KOR')) %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
-  wd <<- wd[,1:len_cols] %>%
+  wd <<- wd[,c(1:2,match(start_date,as.Date(names(wd),'%m/%d/%y')):match(end_date,as.Date(names(wd),'%m/%d/%y')))] %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
-    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & !adm0_a3 %in% c('USA','KOR')) %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
+  kc <<- kc[,c(1:2,match(start_date,as.Date(names(kc),'%m/%d/%y')):match(end_date,as.Date(names(kc),'%m/%d/%y')))] %>%
+    dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
+    subset(select=-c(FIPS,Lat,Long))
+  # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
+  
+  kd <<- kd[,c(1:2,match(start_date,as.Date(names(kd),'%m/%d/%y')):match(end_date,as.Date(names(kd),'%m/%d/%y')))] %>%
+    dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
+    dplyr::filter((Lat != 0 | Long != 0 | `Province/State` == 'Unknown') & adm0_a3 != 'USA') %>%
+    subset(select=-c(FIPS,Lat,Long))
+  # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
+  
   # type_u = grepl('^u',deparse(substitute(data)))
-  uc <<- uc[,1:len_cols] %>%
-    group_by(`Country/Region`,`Province/State`) %>%
-    dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
+  uc <<- uc[,c(1:2,match(start_date,as.Date(names(uc),'%m/%d/%y')):match(end_date,as.Date(names(uc),'%m/%d/%y')))] %>%
+    dplyr::group_by(`Country/Region`,`Province/State`) %>%
+    dplyr::summarize_at(dplyr::vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter(Lat != 0 | Long != 0) %>%
     subset(select=-c(FIPS,Lat,Long))
     # dplyr::select(contains(c('Province/State','Country/Region','adm0_a3','Lat','Long','1/20','5/20')))
 
-  ud <<- ud[,1:len_cols] %>%
-    group_by(`Country/Region`,`Province/State`) %>%
-    dplyr::summarize_at(vars(ends_with("20")),list(~sum(.))) %>%
+  ud <<- ud[,c(1:2,match(start_date,as.Date(names(ud),'%m/%d/%y')):match(end_date,as.Date(names(ud),'%m/%d/%y')))] %>%
+    dplyr::group_by(`Country/Region`,`Province/State`) %>%
+    dplyr::summarize_at(dplyr::vars(ends_with("20")),list(~sum(.))) %>%
     dplyr::inner_join(geo, by=c('Country/Region','Province/State')) %>%
     dplyr::filter(Lat != 0 | Long != 0) %>%
     subset(select=-c(FIPS,Lat,Long))
@@ -101,7 +129,7 @@ clean_data <- function() {
   
 }
 
-group_data <- function(dataframe,cutoff=60) {
+group_data <- function(dataframe) {
   dataname = deparse(substitute(dataframe))
   if (dataname == 'confirmed') {
     dataframe <- dataframe %>%
@@ -122,8 +150,7 @@ group_data <- function(dataframe,cutoff=60) {
       dplyr::group_by(adm0_a3,`Province/State`) %>%
       dplyr::mutate(iTot_Confirmed = `Total Confirmed` - dplyr::lag(`Total Confirmed`)) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate(iTot_Confirmed = dplyr::if_else(is.na(iTot_Confirmed),`Total Confirmed`,iTot_Confirmed)) %>%
-      dplyr::filter(Date>max(Date,na.rm=TRUE)-lubridate::days(cutoff))
+      dplyr::mutate(iTot_Confirmed = dplyr::if_else(is.na(iTot_Confirmed),`Total Confirmed`,iTot_Confirmed))
 
   }
   else if (dataname == 'deaths') {
@@ -145,23 +172,24 @@ group_data <- function(dataframe,cutoff=60) {
       dplyr::group_by(adm0_a3,`Province/State`) %>%
       dplyr::mutate(iTot_Deaths = `Total Deaths` - dplyr::lag(`Total Deaths`)) %>%
       dplyr::ungroup() %>%
-      dplyr::mutate(iTot_Deaths = dplyr::if_else(is.na(iTot_Deaths),`Total Deaths`,iTot_Deaths)) %>%
-      dplyr::filter(Date>max(Date,na.rm=TRUE)-lubridate::days(cutoff))
+      dplyr::mutate(iTot_Deaths = dplyr::if_else(is.na(iTot_Deaths),`Total Deaths`,iTot_Deaths))
   }
 
+  dataframe <- dataframe %>%
+    dplyr::filter(Date > min(Date,na.rm=TRUE))
+  
   return (dataframe)
 }
 
-# cutoff: Days to keep
 # allow_minus: Whether to allow negative changes of infections and deaths
-merge_dataset <- function(wc, wd, uc, ud, cutoff, allow_minus) {
+merge_dataset <- function(wc, wd, kc, kd, uc, ud, allow_minus) {
   # Concontenate Data by type
-  confirmed <- bind_rows(wc,uc)
-  deaths <- bind_rows(wd,ud)
+  confirmed <- bind_rows(wc,kc,uc)
+  deaths <- bind_rows(wd,kd,ud)
 
   # Transform wide-form data to long-form
-  confirmed <- group_data(confirmed,cutoff)
-  deaths <- group_data(deaths,cutoff)
+  confirmed <- group_data(confirmed)
+  deaths <- group_data(deaths)
 
   covid <- cbind(confirmed,c(deaths$Deaths)) %>%
     cbind(c(deaths$`Total Deaths`)) %>%
@@ -172,7 +200,7 @@ merge_dataset <- function(wc, wd, uc, ud, cutoff, allow_minus) {
                   "Total Deaths" = "c(deaths$`Total Deaths`)",
                   "i_Deaths" = "c(deaths$i_Deaths)",
                   "iTot_Deaths" = "c(deaths$iTot_Deaths)")
-
+  
   # Subsetting to positive increases when allow_minus == FALSE
   if (allow_minus == FALSE) {
     covid <- covid %>%

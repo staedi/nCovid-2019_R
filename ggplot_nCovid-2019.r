@@ -19,6 +19,7 @@ read_spdata <- function() {
   gadm_india_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_IND_1_sf.rds")
   gadm_italy_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_ITA_1_sf.rds")
   # gadm_japan_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_JPN_1_sf.rds")
+  gadm_korea_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_KOR_1_sf.rds")
   gadm_mexico_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_MEX_1_sf.rds")
   # gadm_netherlands_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_NLD_1_sf.rds")
   # gadm_nigeria_sf <- readRDS("/Users/minpark/Documents/nCovid-2019/geospatial/gadm36_NGA_1_sf.rds")
@@ -172,20 +173,25 @@ clean_spdata <- function(spframe) {
 merge_data <- function(granularity="state",cutoff=60,allow_minus=FALSE,remote='N') {
   # Preprocess Covid data
   read_file(git_path, file_list, remote)
-  clean_data()
+  clean_data(cutoff)
 
-  covid <<- merge_dataset(wc,wd,uc,ud,cutoff,allow_minus)
-
-  # Preprocess shape data
-  read_spdata()
-  countries_sf <<- clean_spdata(countries_sf)
-  states_sf <<- clean_spdata(states_sf)
-  gadm_sf <<- clean_spdata(gadm_sf)
+  covid <<- merge_dataset(wc,wd,kc,kd,uc,ud,allow_minus)
+  
+  # Record if it has Province/State information
+  covid <<- covid %>%
+    dplyr::group_by(adm0_a3,`Country/Region`,Date) %>%
+    dplyr::mutate(num_states = dplyr::n()) %>%
+    dplyr::ungroup()
+    
+  # # Preprocess shape data
+  # read_spdata()
+  # countries_sf <<- clean_spdata(countries_sf)
+  # states_sf <<- clean_spdata(states_sf)
+  # gadm_sf <<- clean_spdata(gadm_sf)
 
   # covid$merge_type = 'country'
   covid <<- covid %>%
-    dplyr::mutate(merge_type = dplyr::if_else(adm0_a3 %in% c('CAN','USA','BRA','AUS') & !is.na(`Province/State`) & granularity %in% c('state','gadm'),'state','country'),
-                  merge_type = dplyr::if_else(adm0_a3 %in% unique(gadm_sf$adm0_a3) & granularity=='gadm','gadm',merge_type)) %>%
+    dplyr::mutate(merge_type = dplyr::if_else(num_states>1 & !is.na(`Province/State`),'state','country')) %>%
     dplyr::group_by(adm0_a3,Date) %>%
     dplyr::mutate(merge_type = max(merge_type),
                   groups = dplyr::n()) %>%
@@ -209,18 +215,18 @@ merge_data <- function(granularity="state",cutoff=60,allow_minus=FALSE,remote='N
     dplyr::summarize() %>%
     dplyr::ungroup()
 
-  # Merge data and shape (latest data only)
-  countries_cov <<- inner_join(countries_sf, dplyr::filter(covid,merge_type=='country' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","merge_type")) %>%
-    dplyr::rename("Country/Region" = "Country/Region.y") %>%
-    subset(select=-c(`Country/Region.x`))
-  states_cov <<- inner_join(states_sf, dplyr::filter(covid,merge_type=='state' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","Province/State","merge_type")) %>%
-    dplyr::rename("Country/Region" = "Country/Region.y") %>%
-    subset(select=-c(`Country/Region.x`))
-  gadm_cov <<- inner_join(gadm_sf, dplyr::filter(covid,merge_type=='gadm' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","Province/State","merge_type")) %>%
-    dplyr::rename("Country/Region" = "Country/Region.y") %>%
-    subset(select=-c(`Country/Region.x`))
-
-  combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
+  # # Merge data and shape (latest data only)
+  # countries_cov <<- inner_join(countries_sf, dplyr::filter(covid,merge_type=='country' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","merge_type")) %>%
+  #   dplyr::rename("Country/Region" = "Country/Region.y") %>%
+  #   subset(select=-c(`Country/Region.x`))
+  # states_cov <<- inner_join(states_sf, dplyr::filter(covid,merge_type=='state' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","Province/State","merge_type")) %>%
+  #   dplyr::rename("Country/Region" = "Country/Region.y") %>%
+  #   subset(select=-c(`Country/Region.x`))
+  # gadm_cov <<- inner_join(gadm_sf, dplyr::filter(covid,merge_type=='gadm' & Date==max(Date,na.rm=TRUE)), by=c("adm0_a3","Province/State","merge_type")) %>%
+  #   dplyr::rename("Country/Region" = "Country/Region.y") %>%
+  #   subset(select=-c(`Country/Region.x`))
+  # 
+  # combined_cov <<- rbind(countries_cov,states_cov,gadm_cov)
 
   global_stat <<- covid %>%
     dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
@@ -234,55 +240,55 @@ merge_data <- function(granularity="state",cutoff=60,allow_minus=FALSE,remote='N
     dplyr::ungroup()
   }
 
-plot_leaflet <- function(data, col='Confirmed') {
-  data <- data %>%
-    dplyr::filter(Date == max(Date,na.rm=TRUE))
-
-  data$popup_text <- paste0(
-    paste0("<strong>Date:</strong> ",data$Date),
-    paste0("<br /><strong>Country/Region:</strong> ",data$`Country/Region`),
-    ifelse(is.na(data$`Province/State`),"",paste0("<br /><strong>Province/State:</strong> ",data$`Province/State`)),
-    paste0("<br /><strong>Confirmed:</strong> ",prettyNum(data$`Confirmed`,big.mark=','),
-           " / ",prettyNum(data$`Total Confirmed`,big.mark=',')),
-    paste0("<br /><strong>Deaths:</strong> ",prettyNum(data$`Deaths`,big.mark=','),
-           " / ",prettyNum(data$`Total Deaths`,big.mark=','))
-    ) %>% lapply(htmltools::HTML)
-
-  pal <- leaflet::colorNumeric("YlOrRd",data[[col]])
-
-  map <- data %>%
-    # dplyr::filter(Date == max(Date,na.rm=TRUE)) %>%
-    leaflet::leaflet() %>%
-    leaflet::addTiles() %>%
-    leaflet::addPolygons(
-      # fillColor = ~pal(data$Confirmed),
-      fillColor = ~pal(data[[col]]),
-      weight = 2,
-      opacity = 1,
-      color = 'white',
-      dashArray = '3',
-      fillOpacity = 0.7,
-      label = ~data$popup_text,
-      labelOptions = labelOptions(
-        style = list("font-weight" = "normal",
-                     padding = "3px 8px"),
-        textsize = "13px",
-        direction = "auto"),
-      highlight = highlightOptions(weight = 2,
-                                   color = "#666",
-                                   dashArray = "",
-                                   fillOpacity = 0.7,
-                                   bringToFront = TRUE)
-      ) %>%
-    leaflet::addLegend(pal = pal,
-    values = ~data[[col]],
-    # values = ~data$Confirmed,
-    opacity = 0.7,
-    title = paste(col,'(Country & State Level)'),
-    position = 'bottomright')
-
-    map
-    }
+# plot_leaflet <- function(data, col='Confirmed') {
+#   data <- data %>%
+#     dplyr::filter(Date == max(Date,na.rm=TRUE))
+# 
+#   data$popup_text <- paste0(
+#     paste0("<strong>Date:</strong> ",data$Date),
+#     paste0("<br /><strong>Country/Region:</strong> ",data$`Country/Region`),
+#     ifelse(is.na(data$`Province/State`),"",paste0("<br /><strong>Province/State:</strong> ",data$`Province/State`)),
+#     paste0("<br /><strong>Confirmed:</strong> ",prettyNum(data$`Confirmed`,big.mark=','),
+#            " / ",prettyNum(data$`Total Confirmed`,big.mark=',')),
+#     paste0("<br /><strong>Deaths:</strong> ",prettyNum(data$`Deaths`,big.mark=','),
+#            " / ",prettyNum(data$`Total Deaths`,big.mark=','))
+#     ) %>% lapply(htmltools::HTML)
+# 
+#   pal <- leaflet::colorNumeric("YlOrRd",data[[col]])
+# 
+#   map <- data %>%
+#     # dplyr::filter(Date == max(Date,na.rm=TRUE)) %>%
+#     leaflet::leaflet() %>%
+#     leaflet::addTiles() %>%
+#     leaflet::addPolygons(
+#       # fillColor = ~pal(data$Confirmed),
+#       fillColor = ~pal(data[[col]]),
+#       weight = 2,
+#       opacity = 1,
+#       color = 'white',
+#       dashArray = '3',
+#       fillOpacity = 0.7,
+#       label = ~data$popup_text,
+#       labelOptions = labelOptions(
+#         style = list("font-weight" = "normal",
+#                      padding = "3px 8px"),
+#         textsize = "13px",
+#         direction = "auto"),
+#       highlight = highlightOptions(weight = 2,
+#                                    color = "#666",
+#                                    dashArray = "",
+#                                    fillOpacity = 0.7,
+#                                    bringToFront = TRUE)
+#       ) %>%
+#     leaflet::addLegend(pal = pal,
+#     values = ~data[[col]],
+#     # values = ~data$Confirmed,
+#     opacity = 0.7,
+#     title = paste(col,'(Country & State Level)'),
+#     position = 'bottomright')
+# 
+#     map
+#     }
 
 plot_heatmap <- function(covid, type='detailed', limit=25) {
   if (type == 'global') {
@@ -290,18 +296,30 @@ plot_heatmap <- function(covid, type='detailed', limit=25) {
       dplyr::filter(Date==max(Date,na.rm=TRUE)) %>%
       dplyr::group_by(Date) %>%
       dplyr::distinct(adm0_a3,`Country/Region`,`Total Confirmed`,`Total Deaths`) %>%
-      dplyr::mutate(rn_tc=dplyr::dense_rank(desc(`Total Confirmed`)),rn_td=dplyr::dense_rank(desc(`Total Deaths`))) %>%
+      dplyr::mutate(rn_tc=dplyr::min_rank(desc(`Total Confirmed`)),rn_td=dplyr::min_rank(desc(`Total Deaths`))) %>%
       # dplyr::filter(rn_tc<=35) %>%
       dplyr::ungroup() %>%
       dplyr::select(adm0_a3,rn_tc,rn_td)
     }
 
+  else if (type %in% unique(covid$adm0_a3)) {
+    cand <- covid %>%
+      dplyr::filter(Date==max(Date,na.rm=TRUE) & adm0_a3==type) %>%
+      dplyr::group_by(Date,adm0_a3) %>%
+      dplyr::distinct(adm0_a3,`Country/Region`,`Province/State`,Confirmed,Deaths) %>%
+      dplyr::mutate(rn_tc=dplyr::min_rank(desc(Confirmed)),rn_td=dplyr::min_rank(desc(Deaths))) %>%
+      # dplyr::filter(rn_tc<=50 | rn_td<=50) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(adm0_a3,`Province/State`,rn_tc,rn_td)
+  }
+  
   else {
     cand <- covid %>%
+      # dplyr::filter(Date==max(Date,na.rm=TRUE) & merge_type != 'country' & !is.na(`Province/State`)) %>%
       dplyr::filter(Date==max(Date,na.rm=TRUE) & merge_type != 'country' & !is.na(`Province/State`)) %>%
       dplyr::group_by(Date,adm0_a3) %>%
       dplyr::distinct(adm0_a3,`Country/Region`,`Province/State`,Confirmed,Deaths) %>%
-      dplyr::mutate(rn_tc=dplyr::dense_rank(desc(Confirmed)),rn_td=dplyr::dense_rank(desc(Deaths))) %>%
+      dplyr::mutate(rn_tc=dplyr::min_rank(desc(Confirmed)),rn_td=dplyr::min_rank(desc(Deaths))) %>%
       # dplyr::filter(rn_tc<=50 | rn_td<=50) %>%
       dplyr::ungroup() %>%
       dplyr::select(adm0_a3,`Province/State`,rn_tc,rn_td)
@@ -310,6 +328,8 @@ plot_heatmap <- function(covid, type='detailed', limit=25) {
   # ratio <- length(unique(covid$Date))/length(cand)
 
   textcol <- "grey40"
+  caption_text <- 'Johns Hopkins University CSSE'
+  
   htmap <<- list()
 
   if (type == 'global') {
@@ -348,9 +368,10 @@ plot_heatmap <- function(covid, type='detailed', limit=25) {
         ggplot2::labs(x="",y="",
         title=paste("Global nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
         subtitle=paste0("Daily ",target_text," increases by country (Global total: ",scales::comma(summary_stat[1])," / increases: ",scales::comma(summary_stat[2]),")"),
-        caption="Source: Johns Hopkins University CSSE")+
+        caption=paste("Source:",caption_text))+
         ggplot2::scale_y_discrete(expand=c(0,0))+
-        ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
+        # ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
+        ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::label_comma(accuracy=1),breaks=seq(min_val,max_val,(max_val-min_val)%/%min(5,(max_val-min_val)))) +
         ggplot2::guides(fill = ggplot2::guide_legend(reverse=TRUE,title=paste(stringr::str_to_title(target_text),'increases'))) +
         # ggplot2::coord_fixed(ratio=ratio) +
         ggplot2::scale_x_date(expand=c(0,0))+
@@ -381,6 +402,9 @@ plot_heatmap <- function(covid, type='detailed', limit=25) {
 
   else {
     for (cty in unique(cand$adm0_a3)) {
+      if (cty == 'KOR') {
+        caption_text <- 'KCDC'
+      }
       for (iter in 1:2) {
         if (iter==1) {
           cand_state <- as.vector(cand[cand$rn_tc<=limit & cand$adm0_a3==cty,'Province/State']$`Province/State`)
@@ -418,10 +442,10 @@ plot_heatmap <- function(covid, type='detailed', limit=25) {
           ggplot2::labs(x="",y="",
           title=paste(unique(covid[covid$adm0_a3 == cty,'Country/Region']),"nCovid-2019 Status as of",max(covid$Date,na.rm=TRUE)),
           subtitle=paste0("Daily ",target_text," increases by State/Province (",unique(covid[covid$adm0_a3 == cty,'Country/Region'])," total: ",scales::comma(total_cty)," / increases: ",scales::comma(inc_cty),")"),
-          caption="Source: Johns Hopkins University CSSE")+
+          caption=paste("Source:",caption_text))+
           ggplot2::scale_y_discrete(expand=c(0,0))+
-          # ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma) +
-          ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
+          # ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::comma,breaks=seq(min_val,max_val,(max_val-min_val)%/%5)) +
+          ggplot2::scale_fill_gradient(low='lightgray',high='steelblue',labels=scales::label_comma(accuracy=1),breaks=seq(min_val,max_val,(max_val-min_val)%/%min(5,(max_val-min_val)))) +
           ggplot2::guides(fill = ggplot2::guide_legend(reverse=TRUE,title=paste(stringr::str_to_title(target_text),'increases'))) +
           # ggplot2::coord_fixed(ratio=ratio) +
           ggplot2::scale_x_date(expand=c(0,0))+
