@@ -452,6 +452,9 @@ plot_heatmap <- function(covid, target='detailed', type='raw', limit=25) {
       if (cty == 'KOR') {
         caption_text <- 'KCDC'
       }
+      else {
+        caption_text <- 'Johns Hopkins University CSSE'
+      }
       for (iter in 1:2) {
         if (iter==1) {
           cand_state <- as.vector(cand[cand$rn_tc<=limit & cand$adm0_a3==cty,'Province/State']$`Province/State`)
