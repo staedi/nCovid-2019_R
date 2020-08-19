@@ -11,9 +11,10 @@ Probably extended with Animation (`plotlyr`)
 * Generate summary file using raw time-series from [Johns Hopkins University Github](https://github.com/CSSEGISandData/COVID-19) to facilitate state-level data for more countries
 * Interface daily South Korea data from [KCDC](http://ncov.mohw.go.kr/) to facilitate province-level data
 * Employ Facet/arrangeGrob for to combine infections/deaths in one graphics (`arrangeGrob` chosen)
+* Facilitate options to plot either daily increases or that per 100K populations
 
 ## Future Developments
-* Different statistical methods (e.g., moving average, per 100K populations)
+* Different statistical methods (e.g., moving average, *per 100K populations*)
 * Employ more relevant data
   * ~~[Apple mobility data](http://apple.com/covid19/mobility): Walking, Transport, and Driving~~
   * ~~[Google mobility data](https://www.google.com/covid19/mobility/): Transporation and general trends~~
