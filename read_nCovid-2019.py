@@ -2,8 +2,8 @@
 #pylint: disable=anomalous-backslash-in-string
 
 import pandas as pd
-import sys
-import os
+# import sys
+# import os
 from datetime import date, timedelta
 from bs4 import BeautifulSoup
 import requests
@@ -21,7 +21,7 @@ def set_colname(dates):
     list_date = '/'.join(list_date)
     return list_date
 
-def get_datelist(last_wc):
+def get_datelist(last_wc,gaps=5):
     # Get last available date to applicable form
     last_date = last_wc.columns[-1].split('/')
     if len(last_date[2])==2:
@@ -34,7 +34,7 @@ def get_datelist(last_wc):
     else:
         last_date
 
-    start_dt = date(last_date[2],last_date[0],last_date[1])
+    start_dt = date(last_date[2],last_date[0],last_date[1]) - timedelta(days=gaps)
     end_dt = date.today()
     appendlist = [(start_dt + timedelta(days=x)).strftime('%m-%d-%Y')+'.csv' for x in range(1,(end_dt-start_dt).days + 1)]
 
