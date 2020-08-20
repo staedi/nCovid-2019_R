@@ -34,8 +34,12 @@ def get_datelist(last_wc,gaps=5):
     else:
         last_date
 
-    start_dt = date(last_date[2],last_date[0],last_date[1]) - timedelta(days=gaps)
+    start_dt = date(last_date[2],last_date[0],last_date[1])
     end_dt = date.today()
+
+    if start_dt < end_dt-timedelta(days=1):
+        start_dt -= timedelta(days=gaps)
+
     appendlist = [(start_dt + timedelta(days=x)).strftime('%m-%d-%Y')+'.csv' for x in range(1,(end_dt-start_dt).days + 1)]
 
     return appendlist
