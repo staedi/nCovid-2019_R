@@ -65,7 +65,7 @@ def write_file(data,type,date,src_path=src_path):
     if type.split('_')[0] == 'new':
         filename = 'data/'+src_path[type.split('_')[1]]
     else:
-        filename = 'data/'+src_path[type.split('_')[1]]+'_'+date+'_old.csv'
+        filename = 'data/'+src_path[type.split('_')[1]][:-4]+'_'+date[:-2].replace('-','')+'_old.csv'
 
     data.to_csv(filename,index=False)
 
@@ -120,7 +120,7 @@ def read_appendfile():
 
     # Get file list to be appended
     append_file_w = get_datelist(last_wc)
-    append_file_kr = get_datelist(last_kc)
+    append_file_kr = get_datelist(last_kc,0)
 
     # append_file = ['07-29-2020.csv','07-30-2020.csv','07-31-2020.csv','08-01-2020.csv']
 
