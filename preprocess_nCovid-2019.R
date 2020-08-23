@@ -180,9 +180,10 @@ group_data <- function(dataframe) {
 
                     rConfirmed = ifelse(is.na(Population),NA,Confirmed/Population*pop_base),
                     ri_Confirmed = ifelse(is.na(Population),NA,i_Confirmed/Population*pop_base)) %>%
-      dplyr::group_by(adm0_a3) %>%
-      dplyr::mutate(rTConfirmed = `Total Confirmed`/sum(Population,na.rm=TRUE)*pop_base,
-                    riTot_Confirmed = iTot_Confirmed/sum(Population,na.rm=TRUE)*pop_base) %>%
+      dplyr::group_by(Date,adm0_a3) %>%
+      dplyr::mutate(Tot_Population = sum(Population,na.rm=TRUE),
+                    rTConfirmed = `Total Confirmed`/Tot_Population*pop_base,
+                    riTot_Confirmed = iTot_Confirmed/Tot_Population*pop_base) %>%
       dplyr::ungroup()
 
   }
@@ -210,9 +211,10 @@ group_data <- function(dataframe) {
 
                     rDeaths = ifelse(is.na(Population),NA,Deaths/Population*pop_base),
                     ri_Deaths = ifelse(is.na(Population),NA,i_Deaths/Population*pop_base)) %>%
-      dplyr::group_by(adm0_a3) %>%
-      dplyr::mutate(rTDeaths = `Total Deaths`/sum(Population,na.rm=TRUE)*pop_base,
-                    riTot_Deaths = iTot_Deaths/sum(Population,na.rm=TRUE)*pop_base) %>%
+      dplyr::group_by(Date,adm0_a3) %>%
+      dplyr::mutate(Tot_Population = sum(Population,na.rm=TRUE),
+                    rTDeaths = `Total Deaths`/Tot_Population*pop_base,
+                    riTot_Deaths = iTot_Deaths/Tot_Population*pop_base) %>%
       dplyr::ungroup()
   }
 

@@ -2,13 +2,12 @@
 #pylint: disable=anomalous-backslash-in-string
 
 import pandas as pd
-# import sys
-# import os
 from datetime import date, timedelta
 from bs4 import BeautifulSoup
 import requests
 from urllib.error import HTTPError
 from urllib.request import urlretrieve
+import preprocess_nCovid19 as pre
 
 src_path = {'wc':'time_series_covid19_confirmed_global.csv','wd':'time_series_covid19_deaths_global.csv','uc':'time_series_covid19_confirmed_US.csv','ud':'time_series_covid19_deaths_US.csv','kc':'time_series_covid19_confirmed_KR.csv','kd':'time_series_covid19_deaths_KR.csv','geo':'UID_ISO_FIPS_LookUp_Table.csv'}
 
@@ -249,3 +248,4 @@ def read_appendfile():
 
 
 read_appendfile()
+pre.read_appendfile()
