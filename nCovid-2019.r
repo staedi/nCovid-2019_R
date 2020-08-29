@@ -1,7 +1,7 @@
 setwd('/Users/minpark/Documents/nCovid-2019')
 # source('/Users/minpark/Documents/nCovid-2019/preprocess_nCovid-2019.R')
 
-# library(dplyr)
+library(dplyr)
 library(ggplot2)
 # library(leaflet)
 # library(spdplyr)

@@ -246,6 +246,6 @@ def read_appendfile():
     else:
         print("KR summary data update is not required!")
 
-
-read_appendfile()
-pre.read_appendfile()
+if __name__ == '__main__':
+    read_appendfile()
+    pre.read_appendfile()

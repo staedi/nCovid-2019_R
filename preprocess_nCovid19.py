@@ -23,6 +23,8 @@ def get_startdate(data,gaps=5):
 def write_file(data,type,date,target_path=target_path):
     if type == 'new':
         filename = 'data/'+target_path['summary']
+    elif type == 'remote':
+        filename = '../Streamlit/nCovid19/data/'+target_path['summary']
     else:
         filename = 'data/'+target_path['summary'][:-4]+'_'+date[:-2].replace('-','')+'_old.csv'
     print('{}: {}'.format(type,filename))
@@ -70,15 +72,17 @@ def read_appendfile():
     #     # ds = read_source(start_date)
     #     new.drop(new.loc[new['Date']>=start_date,:].index,inplace=True)
 
-    write_date = datetime.strptime(max(ds['Date']),'%m/%d/%y').strftime('%m-%d-%Y')
+    write_date = datetime.strptime(ds.iloc[-1]['Date'],'%m/%d/%y').strftime('%m-%d-%Y')
 
     # Write to files
     print("Updating summary data: {}".format(status))
     if status == 'Replace':
         write_file(last,'last',write_date)
         write_file(new,'new',write_date)
+        write_file(new,'remote',write_date)
     else:
         write_file(new,'new',write_date)
+        write_file(new,'remote',write_date)
     print("Summary data successfully updated")
 
 def read_source(start_date=None):
