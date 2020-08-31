@@ -1,9 +1,7 @@
 # nCovid-2019_R
 
 Workspace for nCovid-2019 Data Wrangling, Analysis and Visulization using R.
-Primarily used with ~~`Leaflet`~~, `geom_tile` for now.
-
-Probably extended with Animation (`plotlyr`)
+Primarily used with ~~`Leaflet`~~, `geom_tile`.
 
 ## Primary objectives
 * ~~Overlay Infections and Deaths for **State / Country** on a map (`Leaflet`)~~
@@ -22,4 +20,4 @@ Probably extended with Animation (`plotlyr`)
   * [Bureau of Labor Statistics](https://www.bls.gov/covid19/home.htm): International Labor Statistics
   * [Federal Reserve of St. Louis](https://research.stlouisfed.org/resources/covid-19/): Overall economics statistics
 * ~~Employ animations for mapping (`shiny` with `Leaflet`)~~
-* Interactive Dashboard (`Streamlit`)
+* Interactive Dashboard (`Streamlit`) **done** in [separate repository](https://github.com/staedi/Streamlit_nCov19)
