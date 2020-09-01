@@ -212,7 +212,7 @@ def group_by_type(data_1, data_2, data_3, type):
 
     # print(data[['Date','Country/Region','Province/State',type,'i_'+type]])
 
-    data.drop(data[data['Date']==min(data['Date'])].index,inplace=True)
+    data.drop(data[data['Date']==data['Date'][0]].index,inplace=True)
     data = data.round(4)
     data.reset_index(drop=True,inplace=True)
     print(data[['Date','Country/Region','Province/State',type,'i_'+type]])
